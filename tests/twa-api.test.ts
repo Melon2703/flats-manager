@@ -32,7 +32,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     });
 
     const createRes = await createFlat(createReq);
-    expect(createRes.status).toBe(200);
+    expect(createRes.status).toBe(201);
     const createdFlat = await createRes.json();
     expect(createdFlat.title).toBe('Flat 301');
 
@@ -78,7 +78,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
       }),
     });
     const tenancyRes = await createTenancy(tenancyReq);
-    expect(tenancyRes.status).toBe(200);
+    expect(tenancyRes.status).toBe(201);
     const tenancy = await tenancyRes.json();
 
     // Check auto-generated expected payment

@@ -43,6 +43,31 @@ export default function HomePage() {
     fetchFlats();
   }, []);
 
+  const getBadgeClass = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'badge-active';
+      case 'maintenance':
+        return 'badge-overdue';
+      case 'vacant':
+      default:
+        return 'badge-vacant';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'Occupied';
+      case 'vacant':
+        return 'Vacant';
+      case 'maintenance':
+        return 'Maintenance';
+      default:
+        return status;
+    }
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -72,17 +97,20 @@ export default function HomePage() {
                 <h3 style={{ fontSize: '1.1rem', marginBottom: 4 }}>{flat.title}</h3>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{flat.address}</p>
               </div>
-              <span className={`badge ${flat.status === 'active' ? 'badge-active' : 'badge-vacant'}`}>
-                {flat.status}
+              <span className={`badge ${getBadgeClass(flat.status)}`}>
+                {getStatusLabel(flat.status)}
               </span>
             </div>
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-              <Link href={`/flats/${flat.id}`} style={{ flex: 1 }}>
-                <button className="btn-secondary">📜 View Timeline</button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+              <Link href={`/flats/${flat.id}`} style={{ flex: '1 1 30%' }}>
+                <button className="btn-secondary" style={{ padding: '8px 10px', fontSize: '0.85rem' }}>📜 Timeline</button>
               </Link>
-              <Link href={`/tenancies/new?flat_id=${flat.id}`} style={{ flex: 1 }}>
-                <button className="btn-primary">+ Tenancy</button>
+              <Link href={`/flats/${flat.id}/edit`} style={{ flex: '1 1 30%' }}>
+                <button className="btn-secondary" style={{ padding: '8px 10px', fontSize: '0.85rem' }}>✏️ Edit</button>
+              </Link>
+              <Link href={`/tenancies/new?flat_id=${flat.id}`} style={{ flex: '1 1 30%' }}>
+                <button className="btn-primary" style={{ padding: '8px 10px', fontSize: '0.85rem' }}>+ Tenancy</button>
               </Link>
             </div>
           </div>

@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { FlatStatus } from '@/lib/types';
 
 export default function NewFlatPage() {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [address, setAddress] = useState('');
-  const [status, setStatus] = useState<'active' | 'vacant' | 'maintenance'>('active');
+  const [status, setStatus] = useState<FlatStatus>('vacant');
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -68,9 +69,9 @@ export default function NewFlatPage() {
           <select
             className="form-select"
             value={status}
-            onChange={(e: any) => setStatus(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value as FlatStatus)}
           >
-            <option value="active">Active (Rented)</option>
+            <option value="active">Occupied</option>
             <option value="vacant">Vacant</option>
             <option value="maintenance">Maintenance</option>
           </select>

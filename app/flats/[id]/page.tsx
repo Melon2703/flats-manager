@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Flat, TimelineEvent } from '@/lib/types';
+import Link from 'next/link';
+import { Flat, TimelineEvent, Tenancy } from '@/lib/types';
 
 export default function FlatDetailPage() {
   const params = useParams();
   const flatId = params.id as string;
 
   const [flat, setFlat] = useState<Flat | null>(null);
+  const [tenancies, setTenancies] = useState<Tenancy[]>([]);
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,14 +18,21 @@ export default function FlatDetailPage() {
     async function loadFlatData() {
       try {
         const initData = (window as any).Telegram?.WebApp?.initData || '';
-        const res = await fetch(`/api/twa/flats`, {
+        const flatRes = await fetch(`/api/twa/flats/${flatId}`, {
           headers: { 'x-telegram-init-data': initData },
         });
 
-        if (res.ok) {
-          const flats: Flat[] = await res.json();
-          const found = flats.find((f) => f.id === flatId);
-          if (found) setFlat(found);
+        if (flatRes.ok) {
+          const fetchedFlat: Flat = await flatRes.json();
+          setFlat(fetchedFlat);
+        }
+
+        const tenancyRes = await fetch(`/api/twa/tenancies?flat_id=${flatId}`, {
+          headers: { 'x-telegram-init-data': initData },
+        });
+        if (tenancyRes.ok) {
+          const fetchedTenancies: Tenancy[] = await tenancyRes.json();
+          setTenancies(fetchedTenancies);
         }
       } catch {
         setFlat({
@@ -43,8 +52,35 @@ export default function FlatDetailPage() {
 
   return (
     <div>
-      <h1 className="title-primary">{flat?.title || 'Flat Timeline'}</h1>
-      <p className="subtitle">{flat?.address}</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <div>
+          <h1 className="title-primary">{flat?.title || 'Flat Timeline'}</h1>
+          <p className="subtitle">{flat?.address}</p>
+        </div>
+        {flat && (
+          <Link href={`/flats/${flat.id}/edit`}>
+            <button className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.85rem' }}>
+              ✏️ Edit Flat
+            </button>
+          </Link>
+        )}
+      </div>
+
+      {tenancies.length > 0 && (
+        <div className="glass-card" style={{ marginBottom: 16 }}>
+          <h2 style={{ fontSize: '1rem', marginBottom: 8, color: 'var(--accent-primary)' }}>
+            👤 Current Tenancy
+          </h2>
+          {tenancies.map((t) => (
+            <div key={t.id} style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
+              <p><strong>Tenant:</strong> {t.tenant_name} ({t.tenant_contact})</p>
+              <p><strong>Rent:</strong> {t.rent_amount.toLocaleString()} RUB / mo (Due on day {t.due_day})</p>
+              <p><strong>Deposit:</strong> {t.deposit_amount.toLocaleString()} RUB</p>
+              <p><strong>Lease Period:</strong> {t.start_date} to {t.end_date}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="glass-card">
         <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>📜 Timeline Events & Records</h2>

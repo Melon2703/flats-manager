@@ -50,7 +50,7 @@ export const db = {
       id: flatData.id || crypto.randomUUID(),
       title: flatData.title || 'Untitled Flat',
       address: flatData.address || '',
-      status: flatData.status || 'active',
+      status: flatData.status || 'vacant',
       created_at: flatData.created_at || new Date().toISOString(),
     };
 
@@ -61,6 +61,20 @@ export const db = {
 
     memoryFlats.unshift(flat);
     return flat;
+  },
+
+  async updateFlat(id: string, updates: Partial<Flat>): Promise<Flat | null> {
+    if (supabaseClient) {
+      const { data, error } = await supabaseClient.from('flats').update(updates).eq('id', id).select().single();
+      if (!error && data) return data as Flat;
+    }
+
+    const index = memoryFlats.findIndex((f) => f.id === id);
+    if (index !== -1) {
+      memoryFlats[index] = { ...memoryFlats[index], ...updates };
+      return memoryFlats[index];
+    }
+    return null;
   },
 
   // TENANCIES
@@ -101,6 +115,10 @@ export const db = {
       status: tenancyData.status || 'active',
       created_at: tenancyData.created_at || new Date().toISOString(),
     };
+
+    if (tenancy.status === 'active' && tenancy.flat_id) {
+      await this.updateFlat(tenancy.flat_id, { status: 'active' });
+    }
 
     if (supabaseClient) {
       const { data, error } = await supabaseClient.from('tenancies').insert(tenancy).select().single();

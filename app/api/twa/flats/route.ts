@@ -16,7 +16,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await req.json();
-  const flat = await db.createFlat(body);
-  return NextResponse.json(flat);
+  try {
+    const body = await req.json();
+    if (!body.title || typeof body.title !== 'string' || !body.title.trim()) {
+      return NextResponse.json({ error: 'Title is required' }, { status: 400 });
+    }
+
+    const flat = await db.createFlat(body);
+    return NextResponse.json(flat, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+  }
 }
