@@ -25,6 +25,10 @@ export default function RootLayout({
             <span>🏠</span>
             <span>Flats</span>
           </Link>
+          <Link href="/payments" className="nav-link">
+            <span>💳</span>
+            <span>Ledger</span>
+          </Link>
           <Link href="/settlement" className="nav-link">
             <span>🧮</span>
             <span>Settlement</span>

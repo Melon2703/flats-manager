@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GET as getFlats, POST as createFlat } from '../app/api/twa/flats/route';
 import { GET as getTenancies, POST as createTenancy } from '../app/api/twa/tenancies/route';
-import { GET as getPayments, POST as recordPayment } from '../app/api/twa/payments/route';
+import { GET as getPayments, POST as recordPayment, PATCH as patchPayment } from '../app/api/twa/payments/route';
+import { POST as uploadReceipt } from '../app/api/twa/upload/route';
+import { GET as cronGeneratePayments } from '../app/api/cron/generate-payments/route';
 import { POST as calculateSettlementApi } from '../app/api/twa/inspections/settlement/route';
 import { createTestInitData } from './helpers/auth-test-utils';
 import { db } from '../lib/db';
@@ -58,7 +60,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     expect(res.status).toBe(401);
   });
 
-  it('creates tenancy and records payment', async () => {
+  it('creates tenancy, generates payments via cron, records payment, and supports status patches', async () => {
     const flat = await db.createFlat({ title: 'Flat 105', address: 'Lenina 5', status: 'active' });
     
     // Create Tenancy
@@ -90,6 +92,17 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     const payments = await paymentsRes.json();
     expect(payments.length).toBeGreaterThan(0);
 
+    // Test upload endpoint
+    const uploadReq = new Request('http://localhost:3000/api/twa/upload', {
+      method: 'POST',
+      headers: getValidHeaders(),
+      body: JSON.stringify({ receipt_base64: 'fakebase64string' }),
+    });
+    const uploadRes = await uploadReceipt(uploadReq);
+    expect(uploadRes.status).toBe(200);
+    const uploadData = await uploadRes.json();
+    expect(uploadData.url).toContain('base64');
+
     // Record payment
     const paymentRecordReq = new Request('http://localhost:3000/api/twa/payments', {
       method: 'POST',
@@ -98,12 +111,12 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
         expected_payment_id: payments[0].id,
         amount: 40000,
         payment_method: 'Bank Transfer',
-        receipt_url: 'http://example.com/receipt.jpg',
+        receipt_url: uploadData.url,
       }),
     });
 
     const recordRes = await recordPayment(paymentRecordReq);
-    expect(recordRes.status).toBe(200);
+    expect(recordRes.status).toBe(201);
     
     const updatedPaymentsReq = new Request(`http://localhost:3000/api/twa/payments?tenancy_id=${tenancy.id}`, {
       method: 'GET',
@@ -112,6 +125,24 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     const updatedPaymentsRes = await getPayments(updatedPaymentsReq);
     const updatedPayments = await updatedPaymentsRes.json();
     expect(updatedPayments[0].status).toBe('Paid');
+
+    // Generate future month payments via cron API
+    const cronReq = new Request('http://localhost:3000/api/cron/generate-payments?date=2026-09-01');
+    const cronRes = await cronGeneratePayments(cronReq);
+    expect(cronRes.status).toBe(200);
+    const cronData = await cronRes.json();
+    expect(cronData.generated_count).toBe(1);
+
+    // Mark as Waived via PATCH endpoint
+    const patchReq = new Request('http://localhost:3000/api/twa/payments', {
+      method: 'PATCH',
+      headers: getValidHeaders(),
+      body: JSON.stringify({ id: cronData.generated_payments[0].id, status: 'Waived' }),
+    });
+    const patchRes = await patchPayment(patchReq);
+    expect(patchRes.status).toBe(200);
+    const patchData = await patchRes.json();
+    expect(patchData.status).toBe('Waived');
   });
 
   it('calculates final settlement via TWA settlement API endpoint', async () => {

@@ -140,27 +140,95 @@ export const db = {
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(Math.min(tenancy.due_day, 28)).padStart(2, '0');
     const dueDate = `${year}-${month}-${day}`;
+    const todayStr = now.toISOString().split('T')[0];
+
+    let status: 'Pending' | 'Due Today' | 'Overdue' = 'Pending';
+    if (dueDate < todayStr) {
+      status = 'Overdue';
+    } else if (dueDate === todayStr) {
+      status = 'Due Today';
+    }
 
     return await this.createExpectedPayment({
       tenancy_id: tenancy.id,
       amount: tenancy.rent_amount,
       due_date: dueDate,
-      status: now.getDate() > tenancy.due_day ? 'Overdue' : 'Pending',
+      status,
     });
   },
 
-  async getExpectedPayments(tenancyId?: string): Promise<ExpectedPayment[]> {
+  async generateMonthlyExpectedPayments(targetDate: Date = new Date()): Promise<ExpectedPayment[]> {
+    const year = targetDate.getFullYear();
+    const monthIndex = targetDate.getMonth();
+    const paddedMonth = String(monthIndex + 1).padStart(2, '0');
+    const monthPrefix = `${year}-${paddedMonth}`;
+
+    const activeTenancies = (await this.getTenancies()).filter((t) => t.status === 'active');
+    const existingPayments = await this.getExpectedPayments();
+
+    const createdPayments: ExpectedPayment[] = [];
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    for (const tenancy of activeTenancies) {
+      const alreadyExists = existingPayments.some(
+        (p) => p.tenancy_id === tenancy.id && p.due_date.startsWith(monthPrefix)
+      );
+
+      if (!alreadyExists) {
+        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+        const day = String(Math.min(tenancy.due_day, daysInMonth)).padStart(2, '0');
+        const dueDate = `${monthPrefix}-${day}`;
+
+        let status: 'Pending' | 'Due Today' | 'Overdue' = 'Pending';
+        if (dueDate < todayStr) {
+          status = 'Overdue';
+        } else if (dueDate === todayStr) {
+          status = 'Due Today';
+        }
+
+        const newPayment = await this.createExpectedPayment({
+          tenancy_id: tenancy.id,
+          amount: tenancy.rent_amount,
+          due_date: dueDate,
+          status,
+        });
+
+        createdPayments.push(newPayment);
+      }
+    }
+
+    return createdPayments;
+  },
+
+  async getExpectedPayments(tenancyId?: string, month?: string, flatId?: string): Promise<ExpectedPayment[]> {
+    let allPayments: ExpectedPayment[] = [];
+
     if (supabaseClient) {
       let query = supabaseClient.from('expected_payments').select('*');
       if (tenancyId) query = query.eq('tenancy_id', tenancyId);
       const { data, error } = await query.order('due_date', { ascending: false });
-      if (!error && data) return data as ExpectedPayment[];
+      if (!error && data) allPayments = data as ExpectedPayment[];
+      else allPayments = [...memoryExpectedPayments];
+    } else {
+      allPayments = [...memoryExpectedPayments];
     }
 
-    let results = [...memoryExpectedPayments];
+    let results = allPayments;
+
     if (tenancyId) {
       results = results.filter((p) => p.tenancy_id === tenancyId);
     }
+
+    if (flatId) {
+      const tenancies = await this.getTenancies(flatId);
+      const tenancyIds = new Set(tenancies.map((t) => t.id));
+      results = results.filter((p) => tenancyIds.has(p.tenancy_id));
+    }
+
+    if (month) {
+      results = results.filter((p) => p.due_date.startsWith(month));
+    }
+
     return results;
   },
 
@@ -206,6 +274,52 @@ export const db = {
   },
 
   // PAYMENT RECORDS
+  async getPaymentRecords(expectedPaymentId?: string): Promise<PaymentRecord[]> {
+    if (supabaseClient) {
+      let query = supabaseClient.from('payment_records').select('*');
+      if (expectedPaymentId) query = query.eq('expected_payment_id', expectedPaymentId);
+      const { data, error } = await query.order('paid_at', { ascending: false });
+      if (!error && data) return data as PaymentRecord[];
+    }
+
+    let results = [...memoryPaymentRecords];
+    if (expectedPaymentId) {
+      results = results.filter((r) => r.expected_payment_id === expectedPaymentId);
+    }
+    return results;
+  },
+
+  async recalculatePaymentStatus(expectedPaymentId: string): Promise<ExpectedPayment | null> {
+    const expected = await this.getExpectedPayment(expectedPaymentId);
+    if (!expected) return null;
+
+    const records = await this.getPaymentRecords(expectedPaymentId);
+    const paidSum = records.reduce((sum, r) => sum + r.amount, 0);
+
+    let newStatus = expected.status;
+
+    if (expected.status === 'Waived' && paidSum === 0) {
+      return expected;
+    }
+
+    if (paidSum >= expected.amount) {
+      newStatus = 'Paid';
+    } else if (paidSum > 0) {
+      newStatus = 'Partial';
+    } else {
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (expected.due_date < todayStr) {
+        newStatus = 'Overdue';
+      } else if (expected.due_date === todayStr) {
+        newStatus = 'Due Today';
+      } else {
+        newStatus = 'Pending';
+      }
+    }
+
+    return await this.updateExpectedPayment(expectedPaymentId, { status: newStatus });
+  },
+
   async createPaymentRecord(data: Partial<PaymentRecord>): Promise<PaymentRecord> {
     const record: PaymentRecord = {
       id: data.id || crypto.randomUUID(),
@@ -220,13 +334,13 @@ export const db = {
     if (supabaseClient) {
       const { data: dbData, error } = await supabaseClient.from('payment_records').insert(record).select().single();
       if (!error && dbData) {
-        await this.updateExpectedPayment(record.expected_payment_id, { status: 'Paid' });
+        await this.recalculatePaymentStatus(record.expected_payment_id);
         return dbData as PaymentRecord;
       }
     }
 
     memoryPaymentRecords.unshift(record);
-    await this.updateExpectedPayment(record.expected_payment_id, { status: 'Paid' });
+    await this.recalculatePaymentStatus(record.expected_payment_id);
     return record;
   },
 
