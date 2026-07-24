@@ -79,6 +79,10 @@ export function calculateSettlement(params: CalculateSettlementParams): Settleme
   };
 }
 
+function formatNumber(val: number, isRu: boolean): string {
+  return val.toLocaleString(isRu ? 'ru-RU' : 'en-US').replace(/\u00a0/g, ' ');
+}
+
 export function generateSettlementSummarySheet(
   summary: SettlementSummary,
   tenantName: string,
@@ -86,20 +90,20 @@ export function generateSettlementSummarySheet(
   lang: 'ru' | 'en' = 'en'
 ): string {
   const isRu = lang === 'ru';
-  const formattedDeposit = summary.deposit_amount.toLocaleString(isRu ? 'ru-RU' : 'en-US').replace(/\u00a0/g, ' ');
-  const formattedRefund = Math.max(0, summary.refund_amount).toLocaleString(isRu ? 'ru-RU' : 'en-US').replace(/\u00a0/g, ' ');
-  const balanceOwed = summary.refund_amount < 0 ? Math.abs(summary.refund_amount).toLocaleString(isRu ? 'ru-RU' : 'en-US').replace(/\u00a0/g, ' ') : '0';
+  const formattedDeposit = formatNumber(summary.deposit_amount, isRu);
+  const formattedRefund = formatNumber(Math.max(0, summary.refund_amount), isRu);
+  const balanceOwed = summary.refund_amount < 0 ? formatNumber(Math.abs(summary.refund_amount), isRu) : '0';
 
   if (isRu) {
-    let sheet = `📋 **РАСЧЕТ ПРИ ВЫЕЗДЕ (ВОЗВРАТ ЗАЛОГА)**\n`;
+    let sheet = `📋 **ИТОГОВЫЙ РАСЧЕТ АРЕНДЫ (FINAL SETTLEMENT)**\n`;
     sheet += `Квартира: ${flatTitle}\n`;
     sheet += `Арендатор: ${tenantName}\n\n`;
     sheet += `Депозит (залог): ${formattedDeposit} руб.\n`;
     sheet += `--- УДЕРЖАНИЯ ---\n`;
-    sheet += `- Долг по аренде: ${summary.deductions.unpaid_rent.toLocaleString('ru-RU').replace(/\u00a0/g, ' ')} руб.\n`;
-    sheet += `- Коммунальные услуги: ${summary.deductions.utilities.toLocaleString('ru-RU').replace(/\u00a0/g, ' ')} руб.\n`;
-    sheet += `- Уборка: ${summary.deductions.cleaning.toLocaleString('ru-RU').replace(/\u00a0/g, ' ')} руб.\n`;
-    sheet += `- Ущерб / Ремонт: ${summary.deductions.damages.toLocaleString('ru-RU').replace(/\u00a0/g, ' ')} руб.\n`;
+    sheet += `- Долг по аренде: ${formatNumber(summary.deductions.unpaid_rent, true)} руб.\n`;
+    sheet += `- Коммунальные услуги: ${formatNumber(summary.deductions.utilities, true)} руб.\n`;
+    sheet += `- Уборка: ${formatNumber(summary.deductions.cleaning, true)} руб.\n`;
+    sheet += `- Ущерб / Ремонт: ${formatNumber(summary.deductions.damages, true)} руб.\n`;
 
     if (summary.itemized_breakdown && summary.itemized_breakdown.length > 0) {
       const photosWithLinks = summary.itemized_breakdown.filter((item) => item.photo_urls && item.photo_urls.length > 0);
@@ -121,15 +125,15 @@ export function generateSettlementSummarySheet(
     return sheet;
   }
 
-  let sheet = `📋 **MOVE-OUT SETTLEMENT SUMMARY**\n`;
+  let sheet = `📋 **FINAL SETTLEMENT SUMMARY**\n`;
   sheet += `Flat: ${flatTitle}\n`;
   sheet += `Tenant: ${tenantName}\n\n`;
   sheet += `Initial Deposit: ${formattedDeposit} RUB\n`;
   sheet += `--- DEDUCTIONS ---\n`;
-  sheet += `- Unpaid Rent: ${summary.deductions.unpaid_rent.toLocaleString('en-US')} RUB\n`;
-  sheet += `- Utilities: ${summary.deductions.utilities.toLocaleString('en-US')} RUB\n`;
-  sheet += `- Cleaning Fee: ${summary.deductions.cleaning.toLocaleString('en-US')} RUB\n`;
-  sheet += `- Damages: ${summary.deductions.damages.toLocaleString('en-US')} RUB\n`;
+  sheet += `- Unpaid Rent: ${formatNumber(summary.deductions.unpaid_rent, false)} RUB\n`;
+  sheet += `- Utilities: ${formatNumber(summary.deductions.utilities, false)} RUB\n`;
+  sheet += `- Cleaning Fee: ${formatNumber(summary.deductions.cleaning, false)} RUB\n`;
+  sheet += `- Damages: ${formatNumber(summary.deductions.damages, false)} RUB\n`;
 
   if (summary.itemized_breakdown && summary.itemized_breakdown.length > 0) {
     const photosWithLinks = summary.itemized_breakdown.filter((item) => item.photo_urls && item.photo_urls.length > 0);

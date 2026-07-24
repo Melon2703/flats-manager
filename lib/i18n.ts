@@ -7,7 +7,7 @@ export const translations = {
     appSubtitle: 'Цифровой бэк-офис аренды',
     flats: 'Квартиры',
     ledger: 'Выписки',
-    settlement: 'Расчет',
+    settlement: 'Итоговый расчет',
     checklist: 'Чек-лист',
     loading: 'Загрузка...',
     save: 'Сохранить',
@@ -26,7 +26,7 @@ export const translations = {
     addFirstFlat: '+ Добавить первую квартиру',
     timeline: '📜 Хронология',
     editFlatBtn: '✏️ Изменить',
-    addTenancy: '+ Договор',
+    addTenancy: '+ Аренда',
 
     // Flat Statuses
     statusActive: 'Занята',
@@ -45,11 +45,11 @@ export const translations = {
     updateFlat: 'Обновить квартиру',
 
     // Flat Detail / Timeline
-    currentTenancy: '👤 Текущий договор аренды',
+    currentTenancy: '👤 Текущая аренда (Tenancy)',
     tenant: 'Арендатор',
     rent: 'Аренда',
     deposit: 'Залог',
-    leasePeriod: 'Срок аренды',
+    leasePeriod: 'Период аренды',
     dueOnDay: 'Оплата до',
     day: 'числа',
     timelineEvents: '📜 Хронология и события',
@@ -59,7 +59,7 @@ export const translations = {
     noEvents: 'События еще не зафиксированы.',
 
     // New Tenancy
-    createTenancyTitle: 'Оформить новый договор аренды',
+    createTenancyTitle: 'Оформить новую аренду (Tenancy)',
     associatedFlat: 'Квартира',
     selectFlat: 'Выберите квартиру',
     tenantNameLabel: 'Имя арендатора',
@@ -71,7 +71,7 @@ export const translations = {
     monthlyRentLabel: 'Арендная плата в месяц (руб.)',
     securityDepositLabel: 'Сумма залога (руб.)',
     dueDayLabel: 'День оплаты каждый месяц (1 - 31)',
-    createTenancy: 'Создать договор',
+    createTenancy: 'Создать аренду',
     creating: 'Создание...',
 
     // Ledger / Payments

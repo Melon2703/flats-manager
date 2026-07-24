@@ -70,7 +70,7 @@ describe('Settlement Calculator Seam', () => {
     });
 
     const sheet = generateSettlementSummarySheet(summary, 'Ivan Petrov', 'Flat 101');
-    expect(sheet).toContain('MOVE-OUT SETTLEMENT SUMMARY');
+    expect(sheet).toContain('FINAL SETTLEMENT SUMMARY');
     expect(sheet).toContain('Flat: Flat 101');
     expect(sheet).toContain('Tenant: Ivan Petrov');
     expect(sheet).toContain('Initial Deposit: 50,000 RUB');

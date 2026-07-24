@@ -56,7 +56,7 @@ export default function FlatDetailPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div>
-          <h1 className="title-primary">{flat?.title || t('timeline')}</h1>
+          <h1 className="title-primary">{flat?.title || t('loading')}</h1>
           <p className="subtitle">{flat?.address}</p>
         </div>
         {flat && (

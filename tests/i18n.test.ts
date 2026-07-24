@@ -9,7 +9,7 @@ describe('i18n Internationalization Seam (lib/i18n.ts)', () => {
     expect(translations.ru.appTitle).toBe('Flats Manager');
     expect(translations.ru.flats).toBe('Квартиры');
     expect(translations.ru.ledger).toBe('Выписки');
-    expect(translations.ru.settlement).toBe('Расчет');
+    expect(translations.ru.settlement).toBe('Итоговый расчет');
     expect(translations.ru.checklist).toBe('Чек-лист');
   });
 
@@ -41,7 +41,7 @@ describe('i18n Internationalization Seam (lib/i18n.ts)', () => {
     };
 
     const sheetRu = generateSettlementSummarySheet(summary, 'Иван Петров', 'Квартира 101', 'ru');
-    expect(sheetRu).toContain('РАСЧЕТ ПРИ ВЫЕЗДЕ');
+    expect(sheetRu).toContain('ИТОГОВЫЙ РАСЧЕТ');
     expect(sheetRu).toContain('Квартира: Квартира 101');
     expect(sheetRu).toContain('Арендатор: Иван Петров');
     expect(sheetRu).toContain('Депозит (залог): 50 000 руб.');
@@ -49,7 +49,7 @@ describe('i18n Internationalization Seam (lib/i18n.ts)', () => {
     expect(sheetRu).toContain('Возврат залога арендатору**: 30 000 руб.');
 
     const sheetEn = generateSettlementSummarySheet(summary, 'Ivan Petrov', 'Flat 101', 'en');
-    expect(sheetEn).toContain('MOVE-OUT SETTLEMENT SUMMARY');
+    expect(sheetEn).toContain('FINAL SETTLEMENT SUMMARY');
     expect(sheetEn).toContain('Initial Deposit: 50,000 RUB');
   });
 });
