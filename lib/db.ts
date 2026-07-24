@@ -427,4 +427,22 @@ export const db = {
     memoryInspectionChecklists.unshift(checklist);
     return checklist;
   },
+
+  async getLatestInspectionChecklist(tenancyId: string, type: 'move_in' | 'move_out'): Promise<InspectionChecklist | null> {
+    if (supabaseClient) {
+      const { data, error } = await supabaseClient
+        .from('inspection_checklists')
+        .select('*')
+        .eq('tenancy_id', tenancyId)
+        .eq('inspection_type', type)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (!error && data && data.length > 0) return data[0] as InspectionChecklist;
+    }
+    const checklists = memoryInspectionChecklists.filter(
+      (i) => i.tenancy_id === tenancyId && i.inspection_type === type
+    );
+    return checklists[0] || null;
+  },
 };
+

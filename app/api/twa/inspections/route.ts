@@ -9,10 +9,17 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const tenancyId = searchParams.get('tenancy_id') || '';
+  const type = searchParams.get('type') as 'move_in' | 'move_out' | null;
+
+  if (type && tenancyId) {
+    const checklist = await db.getLatestInspectionChecklist(tenancyId, type);
+    return NextResponse.json(checklist || null);
+  }
 
   const checklists = await db.getInspectionChecklists(tenancyId);
   return NextResponse.json(checklists);
 }
+
 
 export async function POST(req: Request) {
   if (!authenticateTWA(req)) {

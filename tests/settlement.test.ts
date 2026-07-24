@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { calculateSettlement } from '../lib/settlement';
+import { calculateSettlement, calculateUtilityDifference, generateSettlementSummarySheet } from '../lib/settlement';
+
 
 describe('Settlement Calculator Seam', () => {
   it('correctly calculates deposit refund with formula Refund = Deposit - (Unpaid Rent + Utilities + Cleaning + Damages)', () => {
@@ -36,4 +37,47 @@ describe('Settlement Calculator Seam', () => {
 
     expect(result.refund_amount).toBe(-7000); // 30000 - 37000 = -7000
   });
+
+  it('calculates utility differences between move-in and move-out readings', () => {
+    const moveIn = { electricity: 1000, water: 50, gas: 10 };
+    const moveOut = { electricity: 1200, water: 70, gas: 15 };
+    const rates = { electricity_rate: 6.5, water_rate: 50, gas_rate: 7 };
+
+    const utilityResult = calculateUtilityDifference(moveIn, moveOut, rates);
+
+    // Electricity: 200 * 6.5 = 1300
+    // Water: 20 * 50 = 1000
+    // Gas: 5 * 7 = 35
+    // Total: 2335
+    expect(utilityResult.electricity_cost).toBe(1300);
+    expect(utilityResult.water_cost).toBe(1000);
+    expect(utilityResult.gas_cost).toBe(35);
+    expect(utilityResult.total_utility_cost).toBe(2335);
+  });
+
+  it('formats itemized move-out settlement summary sheet with evidence photo links', () => {
+    const summary = calculateSettlement({
+      deposit_amount: 50000,
+      deductions: {
+        unpaid_rent: 5000,
+        utilities: 2335,
+        cleaning: 2000,
+        damages: 4500,
+      },
+      itemized_breakdown: [
+        { category: 'Damages', description: 'Broken tile', amount: 4500, photo_urls: ['https://example.com/tile.jpg'] },
+      ],
+    });
+
+    const sheet = generateSettlementSummarySheet(summary, 'Ivan Petrov', 'Flat 101');
+    expect(sheet).toContain('MOVE-OUT SETTLEMENT SUMMARY');
+    expect(sheet).toContain('Flat: Flat 101');
+    expect(sheet).toContain('Tenant: Ivan Petrov');
+    expect(sheet).toContain('Initial Deposit: 50,000 RUB');
+    expect(sheet).toContain('Damages: 4,500 RUB');
+    expect(sheet).toContain('https://example.com/tile.jpg');
+    expect(sheet).toContain('Final Deposit Refund Amount**: 36,165 RUB');
+  });
 });
+
+

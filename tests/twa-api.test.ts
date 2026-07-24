@@ -4,7 +4,9 @@ import { GET as getTenancies, POST as createTenancy } from '../app/api/twa/tenan
 import { GET as getPayments, POST as recordPayment, PATCH as patchPayment } from '../app/api/twa/payments/route';
 import { POST as uploadReceipt } from '../app/api/twa/upload/route';
 import { GET as cronGeneratePayments } from '../app/api/cron/generate-payments/route';
+import { GET as getInspections, POST as createInspection } from '../app/api/twa/inspections/route';
 import { POST as calculateSettlementApi } from '../app/api/twa/inspections/settlement/route';
+
 import { createTestInitData } from './helpers/auth-test-utils';
 import { db } from '../lib/db';
 
@@ -171,4 +173,68 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     const data = await res.json();
     expect(data.refund_amount).toBe(30000); // 60000 - 30000 = 30000
   });
+
+  it('supports creating and retrieving Move-In baseline and Move-Out comparative inspection checklists', async () => {
+    const tenancyId = 'test-tenancy-123';
+
+    // 1. Create Move-In Inspection Checklist
+    const moveInReq = new Request('http://localhost:3000/api/twa/inspections', {
+      method: 'POST',
+      headers: getValidHeaders(),
+      body: JSON.stringify({
+        tenancy_id: tenancyId,
+        inspection_type: 'move_in',
+        items_json: {
+          appliances: { fridge: 'good', ac: 'working' },
+          photo_urls: ['https://example.com/movein.jpg'],
+        },
+        meter_readings_json: { electricity: 1000, water: 50 },
+      }),
+    });
+
+    const moveInRes = await createInspection(moveInReq);
+    expect(moveInRes.status).toBe(200);
+    const moveInData = await moveInRes.json();
+    expect(moveInData.inspection_type).toBe('move_in');
+
+    // 2. Fetch Move-In Baseline by tenancy_id & type=move_in
+    const getMoveInReq = new Request(`http://localhost:3000/api/twa/inspections?tenancy_id=${tenancyId}&type=move_in`, {
+      method: 'GET',
+      headers: getValidHeaders(),
+    });
+    const getMoveInRes = await getInspections(getMoveInReq);
+    expect(getMoveInRes.status).toBe(200);
+    const baseline = await getMoveInRes.json();
+    expect(baseline.meter_readings_json.electricity).toBe(1000);
+
+    // 3. Create Move-Out Inspection Checklist
+    const moveOutReq = new Request('http://localhost:3000/api/twa/inspections', {
+      method: 'POST',
+      headers: getValidHeaders(),
+      body: JSON.stringify({
+        tenancy_id: tenancyId,
+        inspection_type: 'move_out',
+        items_json: {
+          appliances: { fridge: 'good', ac: 'broken' },
+          photo_urls: ['https://example.com/moveout-scratch.jpg'],
+        },
+        meter_readings_json: { electricity: 1200, water: 70 },
+      }),
+    });
+
+    const moveOutRes = await createInspection(moveOutReq);
+    expect(moveOutRes.status).toBe(200);
+    const moveOutData = await moveOutRes.json();
+    expect(moveOutData.inspection_type).toBe('move_out');
+
+    // 4. Fetch all checklists for tenancy
+    const getAllReq = new Request(`http://localhost:3000/api/twa/inspections?tenancy_id=${tenancyId}`, {
+      method: 'GET',
+      headers: getValidHeaders(),
+    });
+    const getAllRes = await getInspections(getAllReq);
+    const allChecklists = await getAllRes.json();
+    expect(allChecklists.length).toBe(2);
+  });
 });
+

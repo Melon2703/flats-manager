@@ -11,6 +11,42 @@ export interface CalculateSettlementParams {
   }>;
 }
 
+export interface MeterReadings {
+  electricity?: number;
+  water?: number;
+  gas?: number;
+}
+
+export interface MeterRates {
+  electricity_rate?: number;
+  water_rate?: number;
+  gas_rate?: number;
+}
+
+export function calculateUtilityDifference(
+  moveIn: MeterReadings,
+  moveOut: MeterReadings,
+  rates: MeterRates = { electricity_rate: 6.5, water_rate: 50, gas_rate: 7 }
+): { electricity_cost: number; water_cost: number; gas_cost: number; total_utility_cost: number } {
+  const elecDiff = Math.max(0, (moveOut.electricity || 0) - (moveIn.electricity || 0));
+  const waterDiff = Math.max(0, (moveOut.water || 0) - (moveIn.water || 0));
+  const gasDiff = Math.max(0, (moveOut.gas || 0) - (moveIn.gas || 0));
+
+  const electricity_cost = elecDiff * (rates.electricity_rate ?? 6.5);
+  const water_cost = waterDiff * (rates.water_rate ?? 50);
+  const gas_cost = gasDiff * (rates.gas_rate ?? 7);
+
+  const total_utility_cost = electricity_cost + water_cost + gas_cost;
+
+  return {
+    electricity_cost,
+    water_cost,
+    gas_cost,
+    total_utility_cost,
+  };
+}
+
+
 export function calculateSettlement(params: CalculateSettlementParams): SettlementSummary {
   const { deposit_amount, deductions } = params;
   const totalDeductions =
