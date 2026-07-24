@@ -14,8 +14,8 @@ describe('Flat & Tenancy Management Integration Tests', () => {
     await db.reset();
   });
 
-  const getValidHeaders = () => {
-    const initDataStr = createTestInitData({ id: 123456, first_name: 'Anya' }, botToken);
+  const getValidHeaders = async () => {
+    const initDataStr = await createTestInitData({ id: 123456, first_name: 'Anya' }, botToken);
     return {
       'x-telegram-init-data': initDataStr,
       'Content-Type': 'application/json',
@@ -26,7 +26,7 @@ describe('Flat & Tenancy Management Integration Tests', () => {
     // 1. Create Flat
     const createReq = new Request('http://localhost:3000/api/twa/flats', {
       method: 'POST',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
       body: JSON.stringify({
         title: 'Flat 404 - Skyline',
         address: 'Nevsky Pr. 100, Flat 404',
@@ -44,7 +44,7 @@ describe('Flat & Tenancy Management Integration Tests', () => {
     // 2. List Flats
     const listFlatsReq = new Request('http://localhost:3000/api/twa/flats', {
       method: 'GET',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
     });
     const listFlatsRes = await getFlats(listFlatsReq);
     expect(listFlatsRes.status).toBe(200);
@@ -55,7 +55,7 @@ describe('Flat & Tenancy Management Integration Tests', () => {
     // 3. Retrieve Single Flat
     const getReq = new Request(`http://localhost:3000/api/twa/flats/${createdFlat.id}`, {
       method: 'GET',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
     });
     const getRes = await getFlat(getReq, { params: Promise.resolve({ id: createdFlat.id }) });
     expect(getRes.status).toBe(200);
@@ -65,7 +65,7 @@ describe('Flat & Tenancy Management Integration Tests', () => {
     // 4. Update Flat
     const updateReq = new Request(`http://localhost:3000/api/twa/flats/${createdFlat.id}`, {
       method: 'PUT',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
       body: JSON.stringify({
         title: 'Flat 404 - Renamed',
         address: 'Nevsky Pr. 100, Flat 404',
@@ -88,7 +88,7 @@ describe('Flat & Tenancy Management Integration Tests', () => {
 
     const tenancyReq = new Request('http://localhost:3000/api/twa/tenancies', {
       method: 'POST',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
       body: JSON.stringify({
         flat_id: flat.id,
         tenant_name: 'Elena Smirnova',
@@ -119,7 +119,7 @@ describe('Flat & Tenancy Management Integration Tests', () => {
     // List tenancies for flat
     const listReq = new Request(`http://localhost:3000/api/twa/tenancies?flat_id=${flat.id}`, {
       method: 'GET',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
     });
     const listRes = await getTenancies(listReq);
     expect(listRes.status).toBe(200);
@@ -132,7 +132,7 @@ describe('Flat & Tenancy Management Integration Tests', () => {
     // Flat validation
     const invalidFlatReq = new Request('http://localhost:3000/api/twa/flats', {
       method: 'POST',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
       body: JSON.stringify({ title: '' }),
     });
     const invalidFlatRes = await createFlat(invalidFlatReq);
@@ -141,7 +141,7 @@ describe('Flat & Tenancy Management Integration Tests', () => {
     // Tenancy validation
     const invalidTenancyReq = new Request('http://localhost:3000/api/twa/tenancies', {
       method: 'POST',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
       body: JSON.stringify({ tenant_name: 'Nobody' }), // missing flat_id
     });
     const invalidTenancyRes = await createTenancy(invalidTenancyReq);

@@ -6,7 +6,7 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!authenticateTWA(req)) {
+  if (!(await authenticateTWA(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -24,7 +24,7 @@ export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!authenticateTWA(req)) {
+  if (!(await authenticateTWA(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

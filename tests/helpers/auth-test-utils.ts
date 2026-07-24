@@ -3,7 +3,7 @@ import { computeInitDataHash } from '../../lib/auth';
 /**
  * Helper to generate valid initData string with signature for tests / dev environments.
  */
-export function createTestInitData(userObj: Record<string, any>, botToken: string): string {
+export async function createTestInitData(userObj: Record<string, any>, botToken: string): Promise<string> {
   const authDate = Math.floor(Date.now() / 1000).toString();
   const userJson = JSON.stringify(userObj);
 
@@ -11,7 +11,7 @@ export function createTestInitData(userObj: Record<string, any>, botToken: strin
   params.set('auth_date', authDate);
   params.set('user', userJson);
 
-  const hash = computeInitDataHash(params, botToken);
+  const hash = await computeInitDataHash(params, botToken);
   params.set('hash', hash);
   return params.toString();
 }
@@ -19,12 +19,12 @@ export function createTestInitData(userObj: Record<string, any>, botToken: strin
 /**
  * Helper to generate valid initData string WITHOUT user object for testing edge cases.
  */
-export function createTestInitDataWithoutUser(botToken: string): string {
+export async function createTestInitDataWithoutUser(botToken: string): Promise<string> {
   const authDate = Math.floor(Date.now() / 1000).toString();
   const params = new URLSearchParams();
   params.set('auth_date', authDate);
 
-  const hash = computeInitDataHash(params, botToken);
+  const hash = await computeInitDataHash(params, botToken);
   params.set('hash', hash);
   return params.toString();
 }

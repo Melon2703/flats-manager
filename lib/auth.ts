@@ -1,5 +1,3 @@
-import crypto from 'node:crypto';
-
 /**
  * Checks whether a given Telegram user ID is whitelisted.
  */
@@ -17,9 +15,10 @@ export function isAuthorizedUser(userId: number | null | undefined, allowedUserI
 }
 
 /**
- * Computes Telegram Web App initData HMAC SHA-256 hash.
+ * Computes Telegram Web App initData HMAC SHA-256 hash using Web Crypto API.
+ * Edge Runtime, Node.js (15+), and Web compatible.
  */
-export function computeInitDataHash(params: URLSearchParams, botToken: string): string {
+export async function computeInitDataHash(params: URLSearchParams, botToken: string): Promise<string> {
   const dataCheckArr: string[] = [];
   params.forEach((val, key) => {
     if (key !== 'hash') {
@@ -29,21 +28,37 @@ export function computeInitDataHash(params: URLSearchParams, botToken: string): 
   dataCheckArr.sort();
   const dataCheckString = dataCheckArr.join('\n');
 
-  const secretKey = crypto
-    .createHmac('sha256', 'WebAppData')
-    .update(botToken)
-    .digest();
+  const encoder = new TextEncoder();
 
-  return crypto
-    .createHmac('sha256', secretKey)
-    .update(dataCheckString)
-    .digest('hex');
+  // 1. Create secret key: HMAC-SHA256("WebAppData", botToken)
+  const webAppDataKey = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode('WebAppData'),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const secretKeyBuffer = await crypto.subtle.sign('HMAC', webAppDataKey, encoder.encode(botToken));
+
+  // 2. Compute final hash: HMAC-SHA256(secretKey, dataCheckString)
+  const secretKey = await crypto.subtle.importKey(
+    'raw',
+    secretKeyBuffer,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const hashBuffer = await crypto.subtle.sign('HMAC', secretKey, encoder.encode(dataCheckString));
+
+  // 3. Convert ArrayBuffer to hex string
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
  * Validates Telegram Web App initData HMAC SHA-256 signature.
  */
-export function validateTelegramInitData(initDataStr: string, botToken: string): boolean {
+export async function validateTelegramInitData(initDataStr: string, botToken: string): Promise<boolean> {
   if (!initDataStr || !botToken) return false;
 
   try {
@@ -51,7 +66,7 @@ export function validateTelegramInitData(initDataStr: string, botToken: string):
     const hash = urlParams.get('hash');
     if (!hash) return false;
 
-    const calculatedHash = computeInitDataHash(urlParams, botToken);
+    const calculatedHash = await computeInitDataHash(urlParams, botToken);
     return calculatedHash === hash;
   } catch {
     return false;
@@ -61,13 +76,19 @@ export function validateTelegramInitData(initDataStr: string, botToken: string):
 /**
  * Centralized TWA API authentication middleware helper.
  * Enforces both HMAC signature validity and Telegram User ID whitelist check.
+ * Allows dev bypass when running locally in browser (NODE_ENV === 'development' and no initData provided).
  */
-export function authenticateTWA(req: Request): boolean {
+export async function authenticateTWA(req: Request): Promise<boolean> {
   const initData = req.headers.get('x-telegram-init-data') || '';
   const botToken = process.env.TELEGRAM_BOT_TOKEN || '';
 
+  // Allow browser access during local development when initData is omitted
+  if (process.env.NODE_ENV === 'development' && !initData) {
+    return true;
+  }
+
   if (!initData) return false;
-  if (!validateTelegramInitData(initData, botToken)) return false;
+  if (!(await validateTelegramInitData(initData, botToken))) return false;
 
   try {
     const params = new URLSearchParams(initData);

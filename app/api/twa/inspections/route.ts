@@ -3,7 +3,7 @@ import { authenticateTWA } from '@/lib/security';
 import { db } from '@/lib/db';
 
 export async function GET(req: Request) {
-  if (!authenticateTWA(req)) {
+  if (!(await authenticateTWA(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 
 
 export async function POST(req: Request) {
-  if (!authenticateTWA(req)) {
+  if (!(await authenticateTWA(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

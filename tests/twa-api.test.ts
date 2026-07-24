@@ -14,13 +14,14 @@ const botToken = 'test_bot_token';
 
 describe('TWA API Endpoints Seam (/api/twa/*)', () => {
   beforeEach(async () => {
+    process.env.NODE_ENV = 'production';
     process.env.TELEGRAM_BOT_TOKEN = botToken;
     process.env.TELEGRAM_ALLOWED_USER_IDS = '123456';
     await db.reset();
   });
 
-  const getValidHeaders = () => {
-    const initDataStr = createTestInitData({ id: 123456, first_name: 'Anya' }, botToken);
+  const getValidHeaders = async () => {
+    const initDataStr = await createTestInitData({ id: 123456, first_name: 'Anya' }, botToken);
     return {
       'x-telegram-init-data': initDataStr,
       'Content-Type': 'application/json',
@@ -31,7 +32,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     // Create flat
     const createReq = new Request('http://localhost:3000/api/twa/flats', {
       method: 'POST',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
       body: JSON.stringify({ title: 'Flat 301', address: 'Pushkina 12', status: 'active' }),
     });
 
@@ -43,7 +44,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     // List flats
     const listReq = new Request('http://localhost:3000/api/twa/flats', {
       method: 'GET',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
     });
     const listRes = await getFlats(listReq);
     expect(listRes.status).toBe(200);
@@ -52,7 +53,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     expect(flats[0].title).toBe('Flat 301');
   });
 
-  it('rejects TWA requests with invalid or missing initData', async () => {
+  it('rejects TWA requests with invalid or missing initData in production', async () => {
     const req = new Request('http://localhost:3000/api/twa/flats', {
       method: 'GET',
       headers: { 'x-telegram-init-data': 'invalid_data' },
@@ -68,7 +69,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     // Create Tenancy
     const tenancyReq = new Request('http://localhost:3000/api/twa/tenancies', {
       method: 'POST',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
       body: JSON.stringify({
         flat_id: flat.id,
         tenant_name: 'Alex',
@@ -88,7 +89,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     // Check auto-generated expected payment
     const paymentsReq = new Request(`http://localhost:3000/api/twa/payments?tenancy_id=${tenancy.id}`, {
       method: 'GET',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
     });
     const paymentsRes = await getPayments(paymentsReq);
     const payments = await paymentsRes.json();
@@ -97,7 +98,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     // Test upload endpoint
     const uploadReq = new Request('http://localhost:3000/api/twa/upload', {
       method: 'POST',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
       body: JSON.stringify({ receipt_base64: 'fakebase64string' }),
     });
     const uploadRes = await uploadReceipt(uploadReq);
@@ -108,7 +109,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     // Record payment
     const paymentRecordReq = new Request('http://localhost:3000/api/twa/payments', {
       method: 'POST',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
       body: JSON.stringify({
         expected_payment_id: payments[0].id,
         amount: 40000,
@@ -122,7 +123,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     
     const updatedPaymentsReq = new Request(`http://localhost:3000/api/twa/payments?tenancy_id=${tenancy.id}`, {
       method: 'GET',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
     });
     const updatedPaymentsRes = await getPayments(updatedPaymentsReq);
     const updatedPayments = await updatedPaymentsRes.json();
@@ -138,7 +139,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     // Mark as Waived via PATCH endpoint
     const patchReq = new Request('http://localhost:3000/api/twa/payments', {
       method: 'PATCH',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
       body: JSON.stringify({ id: cronData.generated_payments[0].id, status: 'Waived' }),
     });
     const patchRes = await patchPayment(patchReq);
@@ -150,7 +151,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
   it('calculates final settlement via TWA settlement API endpoint', async () => {
     const req = new Request('http://localhost:3000/api/twa/inspections/settlement', {
       method: 'POST',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
       body: JSON.stringify({
         deposit_amount: 60000,
         deductions: {
@@ -180,7 +181,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     // 1. Create Move-In Inspection Checklist
     const moveInReq = new Request('http://localhost:3000/api/twa/inspections', {
       method: 'POST',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
       body: JSON.stringify({
         tenancy_id: tenancyId,
         inspection_type: 'move_in',
@@ -200,7 +201,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     // 2. Fetch Move-In Baseline by tenancy_id & type=move_in
     const getMoveInReq = new Request(`http://localhost:3000/api/twa/inspections?tenancy_id=${tenancyId}&type=move_in`, {
       method: 'GET',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
     });
     const getMoveInRes = await getInspections(getMoveInReq);
     expect(getMoveInRes.status).toBe(200);
@@ -210,7 +211,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     // 3. Create Move-Out Inspection Checklist
     const moveOutReq = new Request('http://localhost:3000/api/twa/inspections', {
       method: 'POST',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
       body: JSON.stringify({
         tenancy_id: tenancyId,
         inspection_type: 'move_out',
@@ -230,7 +231,7 @@ describe('TWA API Endpoints Seam (/api/twa/*)', () => {
     // 4. Fetch all checklists for tenancy
     const getAllReq = new Request(`http://localhost:3000/api/twa/inspections?tenancy_id=${tenancyId}`, {
       method: 'GET',
-      headers: getValidHeaders(),
+      headers: await getValidHeaders(),
     });
     const getAllRes = await getInspections(getAllReq);
     const allChecklists = await getAllRes.json();

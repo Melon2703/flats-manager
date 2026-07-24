@@ -3,7 +3,7 @@ import { authenticateTWA } from '@/lib/security';
 import { calculateSettlement, generateSettlementSummarySheet } from '@/lib/settlement';
 
 export async function POST(req: Request) {
-  if (!authenticateTWA(req)) {
+  if (!(await authenticateTWA(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
