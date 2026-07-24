@@ -164,7 +164,7 @@ export const db = {
     const monthPrefix = `${year}-${paddedMonth}`;
 
     const activeTenancies = (await this.getTenancies()).filter((t) => t.status === 'active');
-    const existingPayments = await this.getExpectedPayments();
+    const existingPayments = await this.getExpectedPayments(undefined, undefined, undefined, false);
 
     const createdPayments: ExpectedPayment[] = [];
     const todayStr = new Date().toISOString().split('T')[0];
@@ -200,7 +200,12 @@ export const db = {
     return createdPayments;
   },
 
-  async getExpectedPayments(tenancyId?: string, month?: string, flatId?: string): Promise<ExpectedPayment[]> {
+  async getExpectedPayments(tenancyId?: string, month?: string, flatId?: string, autoGenerate: boolean = true): Promise<ExpectedPayment[]> {
+    if (autoGenerate) {
+      const targetDate = month ? new Date(`${month}-01`) : new Date();
+      await this.generateMonthlyExpectedPayments(targetDate);
+    }
+
     let allPayments: ExpectedPayment[] = [];
 
     if (supabaseClient) {
