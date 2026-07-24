@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { FlatStatus } from '@/lib/types';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function EditFlatPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const params = useParams();
   const flatId = params.id as string;
@@ -75,12 +77,12 @@ export default function EditFlatPage() {
   }
 
   if (loading) {
-    return <p style={{ color: 'var(--text-secondary)' }}>Loading flat details...</p>;
+    return <p style={{ color: 'var(--text-secondary)' }}>{t('loading')}</p>;
   }
 
   return (
     <div>
-      <h1 className="title-primary" style={{ marginBottom: 20 }}>Edit Flat Record</h1>
+      <h1 className="title-primary" style={{ marginBottom: 20 }}>{t('editFlatTitle')}</h1>
 
       {error && (
         <div style={{ color: 'var(--accent-rose)', marginBottom: 16, fontSize: '0.9rem' }}>
@@ -90,11 +92,11 @@ export default function EditFlatPage() {
 
       <form onSubmit={handleSubmit} className="glass-card">
         <div className="form-group">
-          <label className="form-label">Flat Title / Number</label>
+          <label className="form-label">{t('flatTitleLabel')}</label>
           <input
             type="text"
             className="form-input"
-            placeholder="e.g. Flat 101 - City Center"
+            placeholder={t('flatTitlePlaceholder')}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
@@ -102,11 +104,11 @@ export default function EditFlatPage() {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Full Physical Address</label>
+          <label className="form-label">{t('flatAddressLabel')}</label>
           <input
             type="text"
             className="form-input"
-            placeholder="e.g. Lenina St 45, Flat 12"
+            placeholder={t('flatAddressPlaceholder')}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             required
@@ -114,24 +116,24 @@ export default function EditFlatPage() {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Status</label>
+          <label className="form-label">{t('flatStatusLabel')}</label>
           <select
             className="form-select"
             value={status}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value as FlatStatus)}
           >
-            <option value="active">Occupied</option>
-            <option value="vacant">Vacant</option>
-            <option value="maintenance">Maintenance</option>
+            <option value="active">{t('statusActive')}</option>
+            <option value="vacant">{t('statusVacant')}</option>
+            <option value="maintenance">{t('statusMaintenance')}</option>
           </select>
         </div>
 
         <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
           <button type="button" className="btn-secondary" onClick={() => router.back()} style={{ flex: 1 }}>
-            Cancel
+            {t('cancel')}
           </button>
           <button type="submit" className="btn-primary" disabled={submitting} style={{ flex: 1 }}>
-            {submitting ? 'Saving...' : 'Update Flat'}
+            {submitting ? t('saving') : t('updateFlat')}
           </button>
         </div>
       </form>

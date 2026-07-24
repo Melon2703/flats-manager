@@ -31,7 +31,7 @@ describe('Auth Security Middleware (lib/auth.ts)', () => {
 
   it('authenticateTWA verifies valid request headers and whitelisted user', async () => {
     const botToken = '123456789:ABCdefGHIjklMNOpqrsTUVwxyz';
-    process.env.NODE_ENV = 'production';
+    (process.env as any).NODE_ENV = 'production';
     process.env.TELEGRAM_BOT_TOKEN = botToken;
     process.env.TELEGRAM_ALLOWED_USER_IDS = '123456';
 
@@ -53,7 +53,7 @@ describe('Auth Security Middleware (lib/auth.ts)', () => {
 
   it('authenticateTWA rejects requests with valid HMAC signature but missing user field', async () => {
     const botToken = '123456789:ABCdefGHIjklMNOpqrsTUVwxyz';
-    process.env.NODE_ENV = 'production';
+    (process.env as any).NODE_ENV = 'production';
     process.env.TELEGRAM_BOT_TOKEN = botToken;
     process.env.TELEGRAM_ALLOWED_USER_IDS = '123456';
 
@@ -65,7 +65,7 @@ describe('Auth Security Middleware (lib/auth.ts)', () => {
   });
 
   it('authenticateTWA allows browser requests in development mode when initData is missing', async () => {
-    process.env.NODE_ENV = 'development';
+    (process.env as any).NODE_ENV = 'development';
     const req = new Request('http://localhost:3000/api/twa/flats');
     expect(await authenticateTWA(req)).toBe(true);
   });

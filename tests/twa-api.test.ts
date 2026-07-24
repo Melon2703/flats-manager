@@ -14,7 +14,7 @@ const botToken = 'test_bot_token';
 
 describe('TWA API Endpoints Seam (/api/twa/*)', () => {
   beforeEach(async () => {
-    process.env.NODE_ENV = 'production';
+    (process.env as any).NODE_ENV = 'production';
     process.env.TELEGRAM_BOT_TOKEN = botToken;
     process.env.TELEGRAM_ALLOWED_USER_IDS = '123456';
     await db.reset();

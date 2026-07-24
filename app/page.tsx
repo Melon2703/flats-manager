@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Flat } from '@/lib/types';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function HomePage() {
+  const { t } = useLanguage();
   const [flats, setFlats] = useState<Flat[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,11 +60,11 @@ export default function HomePage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'active':
-        return 'Occupied';
+        return t('statusActive');
       case 'vacant':
-        return 'Vacant';
+        return t('statusVacant');
       case 'maintenance':
-        return 'Maintenance';
+        return t('statusMaintenance');
       default:
         return status;
     }
@@ -70,31 +72,33 @@ export default function HomePage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 12 }}>
         <div>
-          <h1 className="title-primary">Digital Back Office</h1>
-          <p className="subtitle">Anya's Mom Rental Dashboard</p>
+          <h1 className="title-primary">{t('digitalBackOffice')}</h1>
+          <p className="subtitle" style={{ marginBottom: 0 }}>{t('rentalDashboardSubtitle')}</p>
         </div>
-        <Link href="/flats/new">
-          <button className="btn-primary" style={{ width: 'auto', padding: '10px 16px' }}>+ Add Flat</button>
+        <Link href="/flats/new" style={{ flexShrink: 0 }}>
+          <button className="btn-primary" style={{ width: 'auto', padding: '10px 14px', fontSize: '0.85rem' }}>
+            {t('addFlat')}
+          </button>
         </Link>
       </div>
 
       {loading ? (
-        <p style={{ color: 'var(--text-secondary)' }}>Loading flats...</p>
+        <p style={{ color: 'var(--text-secondary)' }}>{t('loadingFlats')}</p>
       ) : flats.length === 0 ? (
-        <div className="glass-card" style={{ textAlign: 'center', padding: 40 }}>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>No flats added yet.</p>
+        <div className="glass-card" style={{ textAlign: 'center', padding: 32 }}>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>{t('noFlats')}</p>
           <Link href="/flats/new">
-            <button className="btn-primary">+ Add Your First Flat</button>
+            <button className="btn-primary">{t('addFirstFlat')}</button>
           </Link>
         </div>
       ) : (
         flats.map((flat) => (
           <div key={flat.id} className="glass-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, gap: 8 }}>
               <div>
-                <h3 style={{ fontSize: '1.1rem', marginBottom: 4 }}>{flat.title}</h3>
+                <h3 style={{ fontSize: '1.05rem', marginBottom: 4 }}>{flat.title}</h3>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{flat.address}</p>
               </div>
               <span className={`badge ${getBadgeClass(flat.status)}`}>
@@ -103,14 +107,20 @@ export default function HomePage() {
             </div>
 
             <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-              <Link href={`/flats/${flat.id}`} style={{ flex: '1 1 30%' }}>
-                <button className="btn-secondary" style={{ padding: '8px 10px', fontSize: '0.85rem' }}>📜 Timeline</button>
+              <Link href={`/flats/${flat.id}`} style={{ flex: '1 1 calc(33% - 6px)' }}>
+                <button className="btn-secondary" style={{ padding: '8px 6px', fontSize: '0.82rem' }}>
+                  {t('timeline')}
+                </button>
               </Link>
-              <Link href={`/flats/${flat.id}/edit`} style={{ flex: '1 1 30%' }}>
-                <button className="btn-secondary" style={{ padding: '8px 10px', fontSize: '0.85rem' }}>✏️ Edit</button>
+              <Link href={`/flats/${flat.id}/edit`} style={{ flex: '1 1 calc(33% - 6px)' }}>
+                <button className="btn-secondary" style={{ padding: '8px 6px', fontSize: '0.82rem' }}>
+                  {t('editFlatBtn')}
+                </button>
               </Link>
-              <Link href={`/tenancies/new?flat_id=${flat.id}`} style={{ flex: '1 1 30%' }}>
-                <button className="btn-primary" style={{ padding: '8px 10px', fontSize: '0.85rem' }}>+ Tenancy</button>
+              <Link href={`/tenancies/new?flat_id=${flat.id}`} style={{ flex: '1 1 calc(33% - 6px)' }}>
+                <button className="btn-primary" style={{ padding: '8px 6px', fontSize: '0.82rem' }}>
+                  {t('addTenancy')}
+                </button>
               </Link>
             </div>
           </div>

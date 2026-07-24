@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Flat, PaymentMethod, PaymentStatus } from '@/lib/types';
+import { useLanguage } from '@/lib/LanguageContext';
 
 interface EnrichedExpectedPayment {
   id: string;
@@ -25,6 +26,7 @@ interface EnrichedExpectedPayment {
 }
 
 export default function PaymentsLedgerPage() {
+  const { t, lang } = useLanguage();
   const [payments, setPayments] = useState<EnrichedExpectedPayment[]>([]);
   const [flats, setFlats] = useState<Flat[]>([]);
   const [loading, setLoading] = useState(true);
@@ -197,36 +199,58 @@ export default function PaymentsLedgerPage() {
     }
   };
 
+  const getStatusLabel = (status: PaymentStatus) => {
+    switch (status) {
+      case 'Paid': return t('statusPaid');
+      case 'Partial': return t('statusPartial');
+      case 'Due Today': return t('statusDueToday');
+      case 'Overdue': return t('statusOverdue');
+      case 'Waived': return t('statusWaived');
+      case 'Pending': return t('statusPending');
+      default: return status;
+    }
+  };
+
+  const getMethodLabel = (method: PaymentMethod) => {
+    if (method === 'Bank Transfer') return t('bankTransfer');
+    if (method === 'Cash') return t('cash');
+    return method;
+  };
+
   const totalExpected = payments.reduce((acc, p) => acc + (p.status === 'Waived' ? 0 : p.amount), 0);
   const totalCollected = payments.reduce((acc, p) => acc + p.paid_amount, 0);
   const totalOutstanding = Math.max(0, totalExpected - totalCollected);
 
+  const formatCurrency = (val: number) => {
+    return val.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US').replace(/\u00a0/g, ' ');
+  };
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 10 }}>
         <div>
-          <h1 className="title-primary">Payment Ledger</h1>
-          <p className="subtitle">Track rent collection and receipt logs</p>
+          <h1 className="title-primary">{t('ledgerTitle')}</h1>
+          <p className="subtitle" style={{ marginBottom: 0 }}>{t('ledgerSubtitle')}</p>
         </div>
-        <button className="btn-secondary" onClick={handleSyncPayments} style={{ width: 'auto', padding: '8px 12px', fontSize: '0.85rem' }}>
-          ⚡ Sync Month
+        <button className="btn-secondary" onClick={handleSyncPayments} style={{ width: 'auto', padding: '8px 12px', fontSize: '0.85rem', flexShrink: 0 }}>
+          {t('syncMonth')}
         </button>
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
-        <div className="glass-card" style={{ padding: 12, marginBottom: 0, textAlign: 'center' }}>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Expected</p>
-          <p style={{ fontSize: '1rem', fontWeight: 700 }}>₽{totalExpected.toLocaleString()}</p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 20 }}>
+        <div className="glass-card" style={{ padding: 10, marginBottom: 0, textAlign: 'center' }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('expected')}</p>
+          <p style={{ fontSize: '0.95rem', fontWeight: 700 }}>₽{formatCurrency(totalExpected)}</p>
         </div>
-        <div className="glass-card" style={{ padding: 12, marginBottom: 0, textAlign: 'center' }}>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Collected</p>
-          <p style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--accent-green)' }}>₽{totalCollected.toLocaleString()}</p>
+        <div className="glass-card" style={{ padding: 10, marginBottom: 0, textAlign: 'center' }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('collected')}</p>
+          <p style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--accent-green)' }}>₽{formatCurrency(totalCollected)}</p>
         </div>
-        <div className="glass-card" style={{ padding: 12, marginBottom: 0, textAlign: 'center' }}>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Outstanding</p>
-          <p style={{ fontSize: '1rem', fontWeight: 700, color: totalOutstanding > 0 ? 'var(--accent-rose)' : 'var(--text-primary)' }}>
-            ₽{totalOutstanding.toLocaleString()}
+        <div className="glass-card" style={{ padding: 10, marginBottom: 0, textAlign: 'center' }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('outstanding')}</p>
+          <p style={{ fontSize: '0.95rem', fontWeight: 700, color: totalOutstanding > 0 ? 'var(--accent-rose)' : 'var(--text-primary)' }}>
+            ₽{formatCurrency(totalOutstanding)}
           </p>
         </div>
       </div>
@@ -234,8 +258,8 @@ export default function PaymentsLedgerPage() {
       {/* Filter Bar */}
       <div className="glass-card" style={{ padding: 14, marginBottom: 20 }}>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 140 }}>
-            <label className="form-label">Month</label>
+          <div style={{ flex: '1 1 130px' }}>
+            <label className="form-label">{t('month')}</label>
             <input
               type="month"
               className="form-input"
@@ -243,14 +267,14 @@ export default function PaymentsLedgerPage() {
               onChange={(e) => setSelectedMonth(e.target.value)}
             />
           </div>
-          <div style={{ flex: 1, minWidth: 140 }}>
-            <label className="form-label">Flat</label>
+          <div style={{ flex: '1 1 130px' }}>
+            <label className="form-label">{t('associatedFlat')}</label>
             <select
               className="form-select"
               value={selectedFlatId}
               onChange={(e) => setSelectedFlatId(e.target.value)}
             >
-              <option value="">All Flats</option>
+              <option value="">{t('allFlats')}</option>
               {flats.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.title}
@@ -263,42 +287,40 @@ export default function PaymentsLedgerPage() {
 
       {/* Ledger Items */}
       {loading ? (
-        <p style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>Loading payment ledger...</p>
+        <p style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>{t('loading')}</p>
       ) : payments.length === 0 ? (
         <div className="glass-card" style={{ textAlign: 'center', padding: 30 }}>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>No expected payments found for this month.</p>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>{t('noPayments')}</p>
           <button className="btn-primary" onClick={handleSyncPayments} style={{ width: 'auto' }}>
-            + Generate Expected Payments
+            {t('generatePayments')}
           </button>
         </div>
       ) : (
         payments.map((p) => {
-          const remaining = Math.max(0, p.amount - p.paid_amount);
-
           return (
             <div key={p.id} className="glass-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
                 <div>
                   <h3 style={{ fontSize: '1.05rem', marginBottom: 4 }}>{p.flat_title}</h3>
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    Tenant: <strong>{p.tenant_name}</strong>
+                    {t('tenant')}: <strong>{p.tenant_name}</strong>
                   </p>
                 </div>
-                <span className={`badge ${getBadgeClass(p.status)}`}>{p.status}</span>
+                <span className={`badge ${getBadgeClass(p.status)}`}>{getStatusLabel(p.status)}</span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginTop: 12, marginBottom: 12, padding: '8px 12px', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginTop: 12, marginBottom: 12, padding: '8px 12px', background: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-sm)' }}>
                 <div>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'block' }}>Due Date</span>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'block' }}>{t('dueDate')}</span>
                   <strong>{p.due_date}</strong>
                 </div>
                 <div>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'block' }}>Rent Amount</span>
-                  <strong>₽{p.amount.toLocaleString()}</strong>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'block' }}>{t('rentAmount')}</span>
+                  <strong>₽{formatCurrency(p.amount)}</strong>
                 </div>
                 <div>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'block' }}>Paid</span>
-                  <strong style={{ color: 'var(--accent-green)' }}>₽{p.paid_amount.toLocaleString()}</strong>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'block' }}>{t('paid')}</span>
+                  <strong style={{ color: 'var(--accent-green)' }}>₽{formatCurrency(p.paid_amount)}</strong>
                 </div>
               </div>
 
@@ -306,16 +328,16 @@ export default function PaymentsLedgerPage() {
               {p.records && p.records.length > 0 && (
                 <div style={{ marginTop: 10, marginBottom: 12, borderTop: '1px solid var(--card-border)', paddingTop: 10 }}>
                   <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
-                    Payment Transactions:
+                    {t('paymentTransactions')}
                   </p>
                   {p.records.map((rec) => (
                     <div key={rec.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', padding: '4px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
                       <span>
-                        💳 ₽{rec.amount.toLocaleString()} ({rec.payment_method}) - {new Date(rec.paid_at).toLocaleDateString()}
+                        💳 ₽{formatCurrency(rec.amount)} ({getMethodLabel(rec.payment_method)}) - {new Date(rec.paid_at).toLocaleDateString()}
                       </span>
                       {rec.receipt_url && (
                         <a href={rec.receipt_url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', fontSize: '0.75rem' }}>
-                          📄 Receipt
+                          📄 {t('receipt')}
                         </a>
                       )}
                     </div>
@@ -324,19 +346,19 @@ export default function PaymentsLedgerPage() {
               )}
 
               {/* Action buttons */}
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                 {p.status !== 'Paid' && p.status !== 'Waived' && (
-                  <button className="btn-primary" onClick={() => openRecordModal(p)} style={{ flex: 1, padding: '8px 12px', fontSize: '0.85rem' }}>
-                    + Record Payment
+                  <button className="btn-primary" onClick={() => openRecordModal(p)} style={{ flex: '1 1 140px', padding: '8px 12px', fontSize: '0.85rem' }}>
+                    {t('recordPayment')}
                   </button>
                 )}
                 {p.status !== 'Waived' && p.status !== 'Paid' && (
-                  <button className="btn-secondary" onClick={() => handleMarkWaived(p.id)} style={{ flex: '0 0 auto', padding: '8px 12px', fontSize: '0.85rem' }}>
-                    Mark Waived
+                  <button className="btn-secondary" onClick={() => handleMarkWaived(p.id)} style={{ flex: '1 1 120px', padding: '8px 12px', fontSize: '0.85rem' }}>
+                    {t('markWaived')}
                   </button>
                 )}
                 {p.status === 'Paid' && (
-                  <span style={{ fontSize: '0.85rem', color: 'var(--accent-green)', fontWeight: 600 }}>✓ Payment Complete</span>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--accent-green)', fontWeight: 600 }}>{t('paymentComplete')}</span>
                 )}
               </div>
             </div>
@@ -348,14 +370,14 @@ export default function PaymentsLedgerPage() {
       {activePayment && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: 450, background: '#1e293b', marginBottom: 0 }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: 12 }}>Record Payment</h2>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: 12 }}>{t('recordPaymentModalTitle')}</h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 16 }}>
               {activePayment.flat_title} - {activePayment.tenant_name}
             </p>
 
             <form onSubmit={handleRecordPayment}>
               <div className="form-group">
-                <label className="form-label">Amount Received (₽)</label>
+                <label className="form-label">{t('amountReceived')}</label>
                 <input
                   type="number"
                   className="form-input"
@@ -367,19 +389,19 @@ export default function PaymentsLedgerPage() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Payment Method</label>
+                <label className="form-label">{t('paymentMethod')}</label>
                 <select
                   className="form-select"
                   value={payMethod}
                   onChange={(e) => setPayMethod(e.target.value as PaymentMethod)}
                 >
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="Cash">Cash</option>
+                  <option value="Bank Transfer">{t('bankTransfer')}</option>
+                  <option value="Cash">{t('cash')}</option>
                 </select>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Receipt Photo (Optional)</label>
+                <label className="form-label">{t('receiptPhoto')}</label>
                 <input
                   type="file"
                   accept="image/*"
@@ -394,15 +416,17 @@ export default function PaymentsLedgerPage() {
                   className="btn-secondary"
                   onClick={() => setActivePayment(null)}
                   disabled={submitting}
+                  style={{ flex: 1 }}
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   className="btn-primary"
                   disabled={submitting}
+                  style={{ flex: 1 }}
                 >
-                  {submitting ? 'Saving...' : 'Save Payment'}
+                  {submitting ? t('saving') : t('savePayment')}
                 </button>
               </div>
             </form>

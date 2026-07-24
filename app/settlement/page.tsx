@@ -4,8 +4,10 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { calculateSettlement, generateSettlementSummarySheet, calculateUtilityDifference } from '@/lib/settlement';
 import { SettlementDeductions, Tenancy, Flat } from '@/lib/types';
+import { useLanguage } from '@/lib/LanguageContext';
 
 function SettlementForm() {
+  const { t, lang } = useLanguage();
   const searchParams = useSearchParams();
 
   const [tenancies, setTenancies] = useState<Tenancy[]>([]);
@@ -32,7 +34,6 @@ function SettlementForm() {
   const [gasMoveIn, setGasMoveIn] = useState<number>(0);
   const [gasMoveOut, setGasMoveOut] = useState<number>(0);
 
-
   // Damage photo evidence urls
   const [damagePhotoUrl, setDamagePhotoUrl] = useState('');
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
@@ -53,7 +54,7 @@ function SettlementForm() {
           setFlats(flatsData);
 
           if (selectedTenancyId) {
-            const matched = tenanciesData.find((t) => t.id === selectedTenancyId);
+            const matched = tenanciesData.find((ten) => ten.id === selectedTenancyId);
             if (matched) {
               setTenantName(matched.tenant_name);
               setDepositAmount(matched.deposit_amount || 50000);
@@ -116,7 +117,7 @@ function SettlementForm() {
 
   function handleTenancySelect(id: string) {
     setSelectedTenancyId(id);
-    const tenancy = tenancies.find((t) => t.id === id);
+    const tenancy = tenancies.find((ten) => ten.id === id);
     if (tenancy) {
       setTenantName(tenancy.tenant_name);
       setDepositAmount(tenancy.deposit_amount || 50000);
@@ -133,7 +134,6 @@ function SettlementForm() {
     setDeductions((prev) => ({ ...prev, utilities: Math.round(util.total_utility_cost) }));
     setShowUtilityCalc(false);
   }
-
 
   function addDamagePhoto() {
     if (damagePhotoUrl.trim()) {
@@ -163,13 +163,14 @@ function SettlementForm() {
   const generatedSummarySheet = generateSettlementSummarySheet(
     settlementSummary,
     tenantName,
-    flatTitle
+    flatTitle,
+    lang
   );
 
   function copySummarySheet() {
     navigator.clipboard.writeText(generatedSummarySheet);
     (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-    alert('Move-Out Settlement Summary sheet copied to clipboard!');
+    alert(t('summaryCopied'));
   }
 
   function handleDeductionChange(field: keyof SettlementDeductions, value: number) {
@@ -179,23 +180,27 @@ function SettlementForm() {
     }));
   }
 
+  const formatCurrency = (val: number) => {
+    return val.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US').replace(/\u00a0/g, ' ');
+  };
+
   return (
     <div>
-      <h1 className="title-primary" style={{ marginBottom: 4 }}>Settlement Calculator</h1>
-      <p className="subtitle">Deposit refund formula: Deposit - (Rent + Utilities + Cleaning + Damages)</p>
+      <h1 className="title-primary" style={{ marginBottom: 4 }}>{t('settlementTitle')}</h1>
+      <p className="subtitle">{t('settlementSubtitle')}</p>
 
       {tenancies.length > 0 && (
         <div className="glass-card" style={{ padding: 12, marginBottom: 16 }}>
-          <label className="form-label" style={{ marginBottom: 6 }}>Select Tenancy for Auto-Fill</label>
+          <label className="form-label" style={{ marginBottom: 6 }}>{t('selectTenancy')}</label>
           <select
             className="form-select"
             value={selectedTenancyId}
             onChange={(e) => handleTenancySelect(e.target.value)}
           >
-            <option value="">-- Manual Calculation --</option>
-            {tenancies.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.tenant_name} (Deposit: {t.deposit_amount} RUB)
+            <option value="">{t('manualCalc')}</option>
+            {tenancies.map((ten) => (
+              <option key={ten.id} value={ten.id}>
+                {ten.tenant_name} ({t('deposit')}: {formatCurrency(ten.deposit_amount)} ₽)
               </option>
             ))}
           </select>
@@ -204,7 +209,7 @@ function SettlementForm() {
 
       <div className="glass-card">
         <div className="form-group">
-          <label className="form-label">Flat Title</label>
+          <label className="form-label">{t('flatTitleLabel')}</label>
           <input
             type="text"
             className="form-input"
@@ -214,7 +219,7 @@ function SettlementForm() {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Tenant Name</label>
+          <label className="form-label">{t('tenantNameLabel')}</label>
           <input
             type="text"
             className="form-input"
@@ -224,7 +229,7 @@ function SettlementForm() {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Initial Security Deposit (RUB)</label>
+          <label className="form-label">{t('initialDeposit')}</label>
           <input
             type="number"
             className="form-input"
@@ -233,17 +238,17 @@ function SettlementForm() {
           />
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, marginBottom: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, marginBottom: 12, gap: 8 }}>
           <h3 style={{ fontSize: '1rem', color: 'var(--accent-amber)' }}>
-            Deductions Breakdown
+            {t('deductionsBreakdown')}
           </h3>
           <button
             type="button"
             className="btn-secondary"
-            style={{ width: 'auto', padding: '4px 10px', fontSize: '0.8rem' }}
+            style={{ width: 'auto', padding: '6px 12px', fontSize: '0.8rem' }}
             onClick={() => setShowUtilityCalc(!showUtilityCalc)}
           >
-            {showUtilityCalc ? 'Hide Meter Calc' : '⚡ Utility Meter Calc'}
+            {showUtilityCalc ? t('hideMeterCalc') : t('utilityCalcBtn')}
           </button>
         </div>
 
@@ -251,19 +256,19 @@ function SettlementForm() {
         {showUtilityCalc && (
           <div
             style={{
-              background: 'rgba(59, 130, 246, 0.1)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
+              background: 'rgba(99, 102, 241, 0.1)',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
               padding: 12,
               borderRadius: 8,
               marginBottom: 16,
             }}
           >
-            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-blue)', marginBottom: 8 }}>
-              Compute Utility Cost from Move-In vs Move-Out Readings
+            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-primary)', marginBottom: 8 }}>
+              {t('meterReadings')}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: '0.85rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: '0.85rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem' }}>Elec Move-In (kWh)</label>
+                <label style={{ display: 'block', fontSize: '0.75rem' }}>Elec In (кВт⋅ч)</label>
                 <input
                   type="number"
                   className="form-input"
@@ -272,7 +277,7 @@ function SettlementForm() {
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem' }}>Elec Move-Out (kWh)</label>
+                <label style={{ display: 'block', fontSize: '0.75rem' }}>Elec Out (кВт⋅ч)</label>
                 <input
                   type="number"
                   className="form-input"
@@ -281,7 +286,7 @@ function SettlementForm() {
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem' }}>Water Move-In (m³)</label>
+                <label style={{ display: 'block', fontSize: '0.75rem' }}>Water In (м³)</label>
                 <input
                   type="number"
                   className="form-input"
@@ -290,7 +295,7 @@ function SettlementForm() {
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem' }}>Water Move-Out (m³)</label>
+                <label style={{ display: 'block', fontSize: '0.75rem' }}>Water Out (м³)</label>
                 <input
                   type="number"
                   className="form-input"
@@ -299,7 +304,7 @@ function SettlementForm() {
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem' }}>Gas Move-In (m³)</label>
+                <label style={{ display: 'block', fontSize: '0.75rem' }}>Gas In (м³)</label>
                 <input
                   type="number"
                   className="form-input"
@@ -308,7 +313,7 @@ function SettlementForm() {
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem' }}>Gas Move-Out (m³)</label>
+                <label style={{ display: 'block', fontSize: '0.75rem' }}>Gas Out (м³)</label>
                 <input
                   type="number"
                   className="form-input"
@@ -321,17 +326,17 @@ function SettlementForm() {
             <button
               type="button"
               className="btn-primary"
-              style={{ marginTop: 10, padding: '6px 12px', fontSize: '0.85rem' }}
+              style={{ marginTop: 10, padding: '8px 12px', fontSize: '0.85rem' }}
               onClick={applyUtilityCalc}
             >
-              Apply Calculated Utilities
+              {t('save')}
             </button>
           </div>
         )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div className="form-group">
-            <label className="form-label">Unpaid Rent (RUB)</label>
+            <label className="form-label">{t('unpaidRent')}</label>
             <input
               type="number"
               className="form-input"
@@ -341,7 +346,7 @@ function SettlementForm() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Utilities (RUB)</label>
+            <label className="form-label">{t('utilities')}</label>
             <input
               type="number"
               className="form-input"
@@ -351,7 +356,7 @@ function SettlementForm() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Cleaning Fee (RUB)</label>
+            <label className="form-label">{t('cleaningFee')}</label>
             <input
               type="number"
               className="form-input"
@@ -361,7 +366,7 @@ function SettlementForm() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Damages (RUB)</label>
+            <label className="form-label">{t('damages')}</label>
             <input
               type="number"
               className="form-input"
@@ -373,7 +378,7 @@ function SettlementForm() {
 
         {/* Damage Evidence Links */}
         <div className="form-group" style={{ marginTop: 8 }}>
-          <label className="form-label">Damage / Cleaning Evidence Photo Link</label>
+          <label className="form-label">{t('damagePhotoLink')}</label>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
               type="url"
@@ -388,31 +393,31 @@ function SettlementForm() {
               style={{ width: 'auto', whiteSpace: 'nowrap' }}
               onClick={addDamagePhoto}
             >
-              + Link
+              {t('addLink')}
             </button>
           </div>
           {photoUrls.length > 0 && (
             <div style={{ marginTop: 6, fontSize: '0.85rem' }}>
-              <strong>Photo Links Attached:</strong> {photoUrls.length}
+              <strong>{t('photoUrlLabel')}:</strong> {photoUrls.length}
             </div>
           )}
         </div>
 
         {/* Result Banner */}
         <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: 16, borderRadius: 12, marginTop: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 700 }}>
-            <span>Final Settlement:</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.05rem', fontWeight: 700, flexWrap: 'wrap', gap: 8 }}>
+            <span>{t('finalSettlement')}</span>
             <span style={{ color: settlementSummary.refund_amount >= 0 ? 'var(--accent-green)' : 'var(--accent-rose)' }}>
               {settlementSummary.refund_amount >= 0
-                ? `${settlementSummary.refund_amount.toLocaleString('en-US')} RUB Refund`
-                : `${Math.abs(settlementSummary.refund_amount).toLocaleString('en-US')} RUB Balance Due`}
+                ? `${formatCurrency(settlementSummary.refund_amount)} ${t('refundText')}`
+                : `${formatCurrency(Math.abs(settlementSummary.refund_amount))} ${t('balanceDueText')}`}
             </span>
           </div>
         </div>
 
         {/* Formatted Sheet Preview */}
         <div style={{ marginTop: 16 }}>
-          <label className="form-label">Itemized Summary Sheet Preview</label>
+          <label className="form-label">{t('summarySheetPreview')}</label>
           <pre
             style={{
               background: 'rgba(15, 23, 42, 0.8)',
@@ -429,7 +434,7 @@ function SettlementForm() {
         </div>
 
         <button className="btn-primary" onClick={copySummarySheet} style={{ marginTop: 20 }}>
-          📋 Copy Summary Sheet for Tenant
+          {t('copySummarySheet')}
         </button>
       </div>
     </div>
@@ -437,8 +442,9 @@ function SettlementForm() {
 }
 
 export default function SettlementPage() {
+  const { t } = useLanguage();
   return (
-    <Suspense fallback={<p style={{ color: 'var(--text-secondary)' }}>Loading settlement calculator...</p>}>
+    <Suspense fallback={<p style={{ color: 'var(--text-secondary)' }}>{t('loading')}</p>}>
       <SettlementForm />
     </Suspense>
   );

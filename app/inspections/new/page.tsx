@@ -2,8 +2,10 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useLanguage } from '@/lib/LanguageContext';
 
 function InspectionChecklistForm() {
+  const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTenancyId = searchParams.get('tenancy_id') || '';
@@ -12,7 +14,7 @@ function InspectionChecklistForm() {
   const [tenancyId, setTenancyId] = useState(initialTenancyId);
   const [inspectionType, setInspectionType] = useState<'move_in' | 'move_out'>('move_in');
   const [tenantName, setTenantName] = useState('');
-  
+
   // Meter readings
   const [electricMeter, setElectricMeter] = useState('');
   const [waterMeter, setWaterMeter] = useState('');
@@ -83,7 +85,7 @@ function InspectionChecklistForm() {
 
   function handleTenancyChange(id: string) {
     setTenancyId(id);
-    const sel = tenancies.find((t) => t.id === id);
+    const sel = tenancies.find((ten) => ten.id === id);
     if (sel) {
       setTenantName(sel.tenant_name || '');
     }
@@ -150,28 +152,24 @@ function InspectionChecklistForm() {
 
   return (
     <div>
-      <h1 className="title-primary" style={{ marginBottom: 4 }}>Inspection Checklist</h1>
-      <p className="subtitle">Record inventory state, photos & utility meter readings</p>
+      <h1 className="title-primary" style={{ marginBottom: 4 }}>{t('checklistsTitle')}</h1>
+      <p className="subtitle">{t('checklistsSubtitle')}</p>
 
       {successSaved ? (
         <div className="glass-card" style={{ textAlign: 'center', padding: 24 }}>
           <span style={{ fontSize: '3rem' }}>✅</span>
           <h2 style={{ fontSize: '1.2rem', margin: '12px 0' }}>
-            {inspectionType === 'move_in' ? 'Move-In Checklist Recorded' : 'Move-Out Inspection Completed'}
+            {inspectionType === 'move_in' ? t('moveInSuccess') : t('moveOutSuccess')}
           </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 20 }}>
-            {inspectionType === 'move_in'
-              ? 'Baseline condition & meter readings are stored safely.'
-              : 'Move-Out comparative readings captured. Ready to compute deposit settlement.'}
-          </p>
 
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <button className="btn-secondary" onClick={() => router.push('/inspections')}>
-              📋 View All Checklists
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginTop: 20 }}>
+            <button className="btn-secondary" onClick={() => router.push('/inspections')} style={{ flex: '1 1 140px' }}>
+              {t('viewAllChecklists')}
             </button>
             {inspectionType === 'move_out' && (
               <button
                 className="btn-primary"
+                style={{ flex: '1 1 160px' }}
                 onClick={() => {
                   const moveInElec = baselineChecklist?.meter_readings_json?.electricity || 0;
                   const moveInWater = baselineChecklist?.meter_readings_json?.water || 0;
@@ -185,7 +183,7 @@ function InspectionChecklistForm() {
                   router.push(`/settlement?tenancy_id=${tenancyId}&tenant_name=${encodeURIComponent(tenantName)}&utilities=${totalUtil}`);
                 }}
               >
-                🧮 Calculate Final Settlement
+                {t('calculateFinalSettlement')}
               </button>
             )}
           </div>
@@ -193,28 +191,28 @@ function InspectionChecklistForm() {
       ) : (
         <form onSubmit={handleSubmit} className="glass-card">
           <div className="form-group">
-            <label className="form-label">Inspection Type</label>
+            <label className="form-label">{t('inspectionType')}</label>
             <select
               className="form-select"
               value={inspectionType}
               onChange={(e: any) => setInspectionType(e.target.value)}
             >
-              <option value="move_in">Move-In Inspection (Baseline)</option>
-              <option value="move_out">Move-Out Inspection (Final Comparative)</option>
+              <option value="move_in">{t('moveInOption')}</option>
+              <option value="move_out">{t('moveOutOption')}</option>
             </select>
           </div>
 
           {tenancies.length > 0 && (
             <div className="form-group">
-              <label className="form-label">Select Tenancy</label>
+              <label className="form-label">{t('selectTenancy')}</label>
               <select
                 className="form-select"
                 value={tenancyId}
                 onChange={(e) => handleTenancyChange(e.target.value)}
               >
-                {tenancies.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.tenant_name} (Flat ID: {t.flat_id.slice(0, 6)}...)
+                {tenancies.map((ten) => (
+                  <option key={ten.id} value={ten.id}>
+                    {ten.tenant_name} (Flat ID: {ten.flat_id.slice(0, 6)}...)
                   </option>
                 ))}
               </select>
@@ -222,11 +220,11 @@ function InspectionChecklistForm() {
           )}
 
           <div className="form-group">
-            <label className="form-label">Tenant Name</label>
+            <label className="form-label">{t('tenantNameLabel')}</label>
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. Ivan Petrov"
+              placeholder={t('tenantNamePlaceholder')}
               value={tenantName}
               onChange={(e) => setTenantName(e.target.value)}
               required
@@ -237,30 +235,30 @@ function InspectionChecklistForm() {
           {inspectionType === 'move_out' && baselineChecklist && (
             <div
               style={{
-                background: 'rgba(59, 130, 246, 0.1)',
-                border: '1px solid rgba(59, 130, 246, 0.3)',
+                background: 'rgba(99, 102, 241, 0.1)',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
                 padding: 12,
                 borderRadius: 8,
                 marginBottom: 16,
                 fontSize: '0.85rem',
               }}
             >
-              <div style={{ fontWeight: 600, color: 'var(--accent-blue)', marginBottom: 4 }}>
-                📌 Move-In Baseline Found ({new Date(baselineChecklist.created_at).toLocaleDateString()}):
+              <div style={{ fontWeight: 600, color: 'var(--accent-primary)', marginBottom: 4 }}>
+                📌 {t('moveInBaseline')} ({new Date(baselineChecklist.created_at).toLocaleDateString()}):
               </div>
-              <div>⚡ Elec Baseline: {baselineChecklist.meter_readings_json?.electricity || 0} kWh</div>
-              <div>💧 Water Baseline: {baselineChecklist.meter_readings_json?.water || 0} m³</div>
-              <div>🔥 Gas Baseline: {baselineChecklist.meter_readings_json?.gas || 0} m³</div>
+              <div>⚡ {t('electricity')}: {baselineChecklist.meter_readings_json?.electricity || 0}</div>
+              <div>💧 {t('water')}: {baselineChecklist.meter_readings_json?.water || 0}</div>
+              <div>🔥 {t('gas')}: {baselineChecklist.meter_readings_json?.gas || 0}</div>
             </div>
           )}
 
           {/* Meter Readings */}
           <h3 style={{ fontSize: '0.95rem', fontWeight: 600, marginTop: 16, marginBottom: 8 }}>
-            Utility Meter Readings
+            {t('meterReadings')}
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
             <div className="form-group">
-              <label className="form-label">Electricity (kWh)</label>
+              <label className="form-label">{t('electricity')}</label>
               <input
                 type="number"
                 className="form-input"
@@ -271,7 +269,7 @@ function InspectionChecklistForm() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Water (m³)</label>
+              <label className="form-label">{t('water')}</label>
               <input
                 type="number"
                 className="form-input"
@@ -282,7 +280,7 @@ function InspectionChecklistForm() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Gas (m³)</label>
+              <label className="form-label">{t('gas')}</label>
               <input
                 type="number"
                 className="form-input"
@@ -295,55 +293,55 @@ function InspectionChecklistForm() {
 
           {/* Appliance States */}
           <h3 style={{ fontSize: '0.95rem', fontWeight: 600, marginTop: 16, marginBottom: 8 }}>
-            Appliance & Inventory Status
+            {t('applianceStatus')}
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
             <div className="form-group">
-              <label className="form-label">Refrigerator</label>
+              <label className="form-label">{t('refrigerator')}</label>
               <select
                 className="form-select"
                 value={fridgeStatus}
                 onChange={(e) => setFridgeStatus(e.target.value)}
               >
-                <option value="good">Good / Working</option>
-                <option value="dirty">Needs Cleaning</option>
-                <option value="damaged">Damaged</option>
+                <option value="good">{t('goodWorking')}</option>
+                <option value="dirty">{t('needsCleaning')}</option>
+                <option value="damaged">{t('damaged')}</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Air Conditioner</label>
+              <label className="form-label">{t('airConditioner')}</label>
               <select
                 className="form-select"
                 value={acStatus}
                 onChange={(e) => setAcStatus(e.target.value)}
               >
-                <option value="good">Good / Working</option>
-                <option value="noisy">Noisy / Service needed</option>
-                <option value="damaged">Broken / Damaged</option>
+                <option value="good">{t('goodWorking')}</option>
+                <option value="noisy">{t('noisyService')}</option>
+                <option value="damaged">{t('brokenDamaged')}</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Washing Machine</label>
+              <label className="form-label">{t('washingMachine')}</label>
               <select
                 className="form-select"
                 value={washerStatus}
                 onChange={(e) => setWasherStatus(e.target.value)}
               >
-                <option value="good">Good / Working</option>
-                <option value="leaking">Minor Leak</option>
-                <option value="damaged">Broken</option>
+                <option value="good">{t('goodWorking')}</option>
+                <option value="leaking">{t('minorLeak')}</option>
+                <option value="damaged">{t('broken')}</option>
               </select>
             </div>
           </div>
 
           <div className="form-group" style={{ marginTop: 8 }}>
-            <label className="form-label">Condition & Inventory Notes</label>
+            <label className="form-label">{t('inventoryNotes')}</label>
             <textarea
               className="form-textarea"
               rows={3}
-              placeholder="All keys handed over, walls clean, scratch on living room floor..."
+              placeholder={t('inventoryNotesPlaceholder')}
               value={inventoryNotes}
               onChange={(e) => setInventoryNotes(e.target.value)}
             />
@@ -351,7 +349,7 @@ function InspectionChecklistForm() {
 
           {/* Photo Links */}
           <div className="form-group">
-            <label className="form-label">Condition Evidence Photo URL</label>
+            <label className="form-label">{t('photoUrlLabel')}</label>
             <div style={{ display: 'flex', gap: 8 }}>
               <input
                 type="url"
@@ -366,14 +364,14 @@ function InspectionChecklistForm() {
                 style={{ width: 'auto', whiteSpace: 'nowrap' }}
                 onClick={addPhotoUrl}
               >
-                + Add Link
+                {t('addLink')}
               </button>
             </div>
             {photoUrls.length > 0 && (
               <ul style={{ marginTop: 8, fontSize: '0.85rem', paddingLeft: 16 }}>
                 {photoUrls.map((url, idx) => (
                   <li key={idx} style={{ margin: '4px 0', wordBreak: 'break-all' }}>
-                    <a href={url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-blue)' }}>
+                    <a href={url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)' }}>
                       {url}
                     </a>{' '}
                     <button
@@ -396,7 +394,7 @@ function InspectionChecklistForm() {
           </div>
 
           <button type="submit" className="btn-primary" disabled={submitting} style={{ marginTop: 12 }}>
-            {submitting ? 'Saving Checklist...' : 'Save Inspection Checklist'}
+            {submitting ? t('savingChecklist') : t('saveChecklist')}
           </button>
         </form>
       )}
@@ -405,8 +403,9 @@ function InspectionChecklistForm() {
 }
 
 export default function InspectionChecklistPage() {
+  const { t } = useLanguage();
   return (
-    <Suspense fallback={<p style={{ color: 'var(--text-secondary)' }}>Loading form...</p>}>
+    <Suspense fallback={<p style={{ color: 'var(--text-secondary)' }}>{t('loading')}</p>}>
       <InspectionChecklistForm />
     </Suspense>
   );

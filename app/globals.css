@@ -19,7 +19,7 @@
 [data-theme='light'] {
   --bg-gradient-start: #f1f5f9;
   --bg-gradient-end: #e0e7ff;
-  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-bg: rgba(255, 255, 255, 0.85);
   --card-border: rgba(0, 0, 0, 0.08);
   --text-primary: #0f172a;
   --text-secondary: #64748b;
@@ -31,6 +31,12 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  min-height: 100%;
+  overscroll-behavior-y: contain;
 }
 
 body {
@@ -38,14 +44,82 @@ body {
   color: var(--text-primary);
   font-family: var(--font-family);
   min-height: 100vh;
-  padding: 16px;
+  padding: 12px 12px 24px 12px;
   -webkit-font-smoothing: antialiased;
 }
 
 .twa-container {
   max-width: 600px;
   margin: 0 auto;
-  padding-bottom: 80px;
+  padding-bottom: max(90px, calc(80px + env(safe-area-inset-bottom)));
+}
+
+/* Top Header Bar */
+.top-header {
+  max-width: 600px;
+  margin: 0 auto 16px auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  font-size: 1.6rem;
+}
+
+.header-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* Language Switcher */
+.lang-switcher {
+  display: flex;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 4px;
+  border-radius: 9999px;
+  border: 1px solid var(--card-border);
+}
+
+.lang-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 9999px;
+  cursor: pointer;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.lang-btn.active {
+  background: var(--accent-primary);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
 }
 
 /* Glassmorphism Card */
@@ -55,15 +129,14 @@ body {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 18px;
   margin-bottom: 16px;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.glass-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.3);
+.glass-card:active {
+  transform: scale(0.99);
 }
 
 /* Typography & Headers */
@@ -73,13 +146,13 @@ h1, h2, h3 {
 }
 
 .title-primary {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   margin-bottom: 4px;
 }
 
 .subtitle {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   margin-bottom: 16px;
 }
 
@@ -90,10 +163,11 @@ h1, h2, h3 {
   gap: 6px;
   padding: 4px 10px;
   border-radius: 9999px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 .badge-active, .badge-paid {
@@ -132,7 +206,7 @@ h1, h2, h3 {
   border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
-/* Buttons */
+/* Buttons - Mobile Touch Friendly */
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -142,17 +216,19 @@ h1, h2, h3 {
   background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
   color: #ffffff;
   font-weight: 600;
-  font-size: 1rem;
-  padding: 14px 20px;
+  font-size: 0.95rem;
+  padding: 12px 18px;
+  min-height: 46px;
   border-radius: var(--radius-md);
   border: none;
   cursor: pointer;
   transition: opacity 0.2s ease, transform 0.1s ease;
   box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.4);
+  touch-action: manipulation;
 }
 
 .btn-primary:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .btn-secondary {
@@ -164,19 +240,22 @@ h1, h2, h3 {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
   font-weight: 600;
-  font-size: 0.95rem;
-  padding: 12px 18px;
+  font-size: 0.9rem;
+  padding: 10px 16px;
+  min-height: 44px;
   border-radius: var(--radius-md);
   border: 1px solid var(--card-border);
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.1s ease;
+  touch-action: manipulation;
 }
 
-.btn-secondary:hover {
+.btn-secondary:active {
+  transform: scale(0.97);
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* Forms */
+/* Forms - Touch Ergonomics */
 .form-group {
   margin-bottom: 16px;
 }
@@ -195,6 +274,7 @@ h1, h2, h3 {
   border: 1px solid var(--card-border);
   border-radius: var(--radius-md);
   padding: 12px 14px;
+  min-height: 46px;
   color: var(--text-primary);
   font-size: 1rem;
   outline: none;
@@ -224,32 +304,65 @@ h1, h2, h3 {
   background: var(--accent-primary);
 }
 
-/* Navigation Bar */
+/* Touch-optimized Navigation Bar */
 .bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--card-border);
   display: flex;
   justify-content: space-around;
-  padding: 12px 0;
+  align-items: center;
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom)) 0;
   z-index: 100;
 }
 
 .nav-link {
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  min-width: 60px;
+  min-height: 48px;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.nav-icon {
+  font-size: 1.3rem;
 }
 
 .nav-link.active {
   color: var(--accent-primary);
-  font-weight: 600;
+  font-weight: 700;
+}
+
+/* Mobile responsive breakpoints */
+@media (max-width: 480px) {
+  body {
+    padding: 8px 8px 16px 8px;
+  }
+  
+  .top-header {
+    padding: 10px 12px;
+  }
+  
+  .glass-card {
+    padding: 14px;
+  }
+  
+  .title-primary {
+    font-size: 1.25rem;
+  }
+
+  .btn-primary, .btn-secondary {
+    font-size: 0.88rem;
+  }
 }

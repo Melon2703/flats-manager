@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Flat, TimelineEvent, Tenancy } from '@/lib/types';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function FlatDetailPage() {
+  const { t } = useLanguage();
   const params = useParams();
   const flatId = params.id as string;
 
@@ -54,13 +56,13 @@ export default function FlatDetailPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div>
-          <h1 className="title-primary">{flat?.title || 'Flat Timeline'}</h1>
+          <h1 className="title-primary">{flat?.title || t('timeline')}</h1>
           <p className="subtitle">{flat?.address}</p>
         </div>
         {flat && (
           <Link href={`/flats/${flat.id}/edit`}>
             <button className="btn-secondary" style={{ padding: '8px 12px', fontSize: '0.85rem' }}>
-              ✏️ Edit Flat
+              {t('editFlatBtn')}
             </button>
           </Link>
         )}
@@ -69,21 +71,21 @@ export default function FlatDetailPage() {
       {tenancies.length > 0 && (
         <div className="glass-card" style={{ marginBottom: 16 }}>
           <h2 style={{ fontSize: '1rem', marginBottom: 8, color: 'var(--accent-primary)' }}>
-            👤 Current Tenancy
+            {t('currentTenancy')}
           </h2>
-          {tenancies.map((t) => (
-            <div key={t.id} style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
-              <p><strong>Tenant:</strong> {t.tenant_name} ({t.tenant_contact})</p>
-              <p><strong>Rent:</strong> {t.rent_amount.toLocaleString()} RUB / mo (Due on day {t.due_day})</p>
-              <p><strong>Deposit:</strong> {t.deposit_amount.toLocaleString()} RUB</p>
-              <p><strong>Lease Period:</strong> {t.start_date} to {t.end_date}</p>
+          {tenancies.map((ten) => (
+            <div key={ten.id} style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
+              <p><strong>{t('tenant')}:</strong> {ten.tenant_name} ({ten.tenant_contact})</p>
+              <p><strong>{t('rent')}:</strong> {ten.rent_amount.toLocaleString()} RUB ({t('dueOnDay')} {ten.due_day} {t('day')})</p>
+              <p><strong>{t('deposit')}:</strong> {ten.deposit_amount.toLocaleString()} RUB</p>
+              <p><strong>{t('leasePeriod')}:</strong> {ten.start_date} — {ten.end_date}</p>
             </div>
           ))}
         </div>
       )}
 
       <div className="glass-card">
-        <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>📜 Timeline Events & Records</h2>
+        <h2 style={{ fontSize: '1.1rem', marginBottom: 12 }}>{t('timelineEvents')}</h2>
 
         {events.length > 0 ? (
           events.map((event) => (
@@ -92,7 +94,7 @@ export default function FlatDetailPage() {
                 {new Date(event.created_at).toLocaleString()}
               </p>
               <p style={{ fontWeight: 600 }}>
-                {event.event_type === 'voice_transcript' ? '🎙️ Voice Note' : event.event_type === 'receipt' ? '💳 Receipt' : '📌 Note'}
+                {event.event_type === 'voice_transcript' ? t('voiceNote') : event.event_type === 'receipt' ? t('receipt') : t('note')}
               </p>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                 {event.content_text}
@@ -103,7 +105,7 @@ export default function FlatDetailPage() {
           <div>
             <div className="timeline-item">
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Today at 10:15 AM</p>
-              <p style={{ fontWeight: 600 }}>🎙️ Voice Note Transcript</p>
+              <p style={{ fontWeight: 600 }}>{t('voiceNote')}</p>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                 "Tenant reported faucet dripping in bathroom, requested plumber for Tuesday."
               </p>
@@ -111,7 +113,7 @@ export default function FlatDetailPage() {
 
             <div className="timeline-item">
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>July 20, 2026</p>
-              <p style={{ fontWeight: 600 }}>💳 Rent Payment Received</p>
+              <p style={{ fontWeight: 600 }}>{t('receipt')}</p>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                 45,000 RUB paid via Bank Transfer. Receipt attached.
               </p>
@@ -119,7 +121,7 @@ export default function FlatDetailPage() {
 
             <div className="timeline-item">
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>July 01, 2026</p>
-              <p style={{ fontWeight: 600 }}>📋 Move-In Inspection Completed</p>
+              <p style={{ fontWeight: 600 }}>{t('moveInTag')}</p>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                 Baseline photos & electric meter reading (14,520 kWh) documented.
               </p>

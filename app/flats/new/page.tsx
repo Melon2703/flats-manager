@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FlatStatus } from '@/lib/types';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function NewFlatPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [address, setAddress] = useState('');
@@ -37,15 +39,15 @@ export default function NewFlatPage() {
 
   return (
     <div>
-      <h1 className="title-primary" style={{ marginBottom: 20 }}>Add New Flat</h1>
+      <h1 className="title-primary" style={{ marginBottom: 20 }}>{t('newFlatTitle')}</h1>
 
       <form onSubmit={handleSubmit} className="glass-card">
         <div className="form-group">
-          <label className="form-label">Flat Title / Number</label>
+          <label className="form-label">{t('flatTitleLabel')}</label>
           <input
             type="text"
             className="form-input"
-            placeholder="e.g. Flat 101 - City Center"
+            placeholder={t('flatTitlePlaceholder')}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
@@ -53,11 +55,11 @@ export default function NewFlatPage() {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Full Physical Address</label>
+          <label className="form-label">{t('flatAddressLabel')}</label>
           <input
             type="text"
             className="form-input"
-            placeholder="e.g. Lenina St 45, Flat 12"
+            placeholder={t('flatAddressPlaceholder')}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             required
@@ -65,20 +67,20 @@ export default function NewFlatPage() {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Initial Status</label>
+          <label className="form-label">{t('flatStatusLabel')}</label>
           <select
             className="form-select"
             value={status}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value as FlatStatus)}
           >
-            <option value="active">Occupied</option>
-            <option value="vacant">Vacant</option>
-            <option value="maintenance">Maintenance</option>
+            <option value="active">{t('statusActive')}</option>
+            <option value="vacant">{t('statusVacant')}</option>
+            <option value="maintenance">{t('statusMaintenance')}</option>
           </select>
         </div>
 
         <button type="submit" className="btn-primary" disabled={submitting}>
-          {submitting ? 'Saving...' : 'Save Flat'}
+          {submitting ? t('saving') : t('saveFlat')}
         </button>
       </form>
     </div>

@@ -79,10 +79,47 @@ export function calculateSettlement(params: CalculateSettlementParams): Settleme
   };
 }
 
-export function generateSettlementSummarySheet(summary: SettlementSummary, tenantName: string, flatTitle: string): string {
-  const formattedDeposit = summary.deposit_amount.toLocaleString('en-US');
-  const formattedRefund = Math.max(0, summary.refund_amount).toLocaleString('en-US');
-  const balanceOwed = summary.refund_amount < 0 ? Math.abs(summary.refund_amount).toLocaleString('en-US') : '0';
+export function generateSettlementSummarySheet(
+  summary: SettlementSummary,
+  tenantName: string,
+  flatTitle: string,
+  lang: 'ru' | 'en' = 'en'
+): string {
+  const isRu = lang === 'ru';
+  const formattedDeposit = summary.deposit_amount.toLocaleString(isRu ? 'ru-RU' : 'en-US').replace(/\u00a0/g, ' ');
+  const formattedRefund = Math.max(0, summary.refund_amount).toLocaleString(isRu ? 'ru-RU' : 'en-US').replace(/\u00a0/g, ' ');
+  const balanceOwed = summary.refund_amount < 0 ? Math.abs(summary.refund_amount).toLocaleString(isRu ? 'ru-RU' : 'en-US').replace(/\u00a0/g, ' ') : '0';
+
+  if (isRu) {
+    let sheet = `📋 **РАСЧЕТ ПРИ ВЫЕЗДЕ (ВОЗВРАТ ЗАЛОГА)**\n`;
+    sheet += `Квартира: ${flatTitle}\n`;
+    sheet += `Арендатор: ${tenantName}\n\n`;
+    sheet += `Депозит (залог): ${formattedDeposit} руб.\n`;
+    sheet += `--- УДЕРЖАНИЯ ---\n`;
+    sheet += `- Долг по аренде: ${summary.deductions.unpaid_rent.toLocaleString('ru-RU').replace(/\u00a0/g, ' ')} руб.\n`;
+    sheet += `- Коммунальные услуги: ${summary.deductions.utilities.toLocaleString('ru-RU').replace(/\u00a0/g, ' ')} руб.\n`;
+    sheet += `- Уборка: ${summary.deductions.cleaning.toLocaleString('ru-RU').replace(/\u00a0/g, ' ')} руб.\n`;
+    sheet += `- Ущерб / Ремонт: ${summary.deductions.damages.toLocaleString('ru-RU').replace(/\u00a0/g, ' ')} руб.\n`;
+
+    if (summary.itemized_breakdown && summary.itemized_breakdown.length > 0) {
+      const photosWithLinks = summary.itemized_breakdown.filter((item) => item.photo_urls && item.photo_urls.length > 0);
+      if (photosWithLinks.length > 0) {
+        sheet += `\n--- ССЫЛКИ НА ФОТО И ПОДТВЕРЖДЕНИЯ ---\n`;
+        for (const item of photosWithLinks) {
+          sheet += `- ${item.category}: ${item.photo_urls?.join(', ')}\n`;
+        }
+      }
+    }
+
+    sheet += `\n`;
+    if (summary.refund_amount >= 0) {
+      sheet += `✅ **Возврат залога арендатору**: ${formattedRefund} руб.`;
+    } else {
+      sheet += `⚠️ **Доплата с арендатора**: ${balanceOwed} руб.`;
+    }
+
+    return sheet;
+  }
 
   let sheet = `📋 **MOVE-OUT SETTLEMENT SUMMARY**\n`;
   sheet += `Flat: ${flatTitle}\n`;

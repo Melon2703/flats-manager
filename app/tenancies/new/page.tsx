@@ -3,8 +3,10 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Flat } from '@/lib/types';
+import { useLanguage } from '@/lib/LanguageContext';
 
 function TenancyForm() {
+  const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const flatIdParam = searchParams.get('flat_id') || '';
@@ -36,7 +38,6 @@ function TenancyForm() {
           }
         }
       } catch {
-        // Fallback flat list
         setFlats([
           { id: '1', title: 'Flat 101 - City Center', address: 'Lenina St. 45, Flat 12', status: 'vacant', created_at: new Date().toISOString() }
         ]);
@@ -50,7 +51,7 @@ function TenancyForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!flatId) {
-      setError('Please select a flat');
+      setError(t('selectFlat'));
       return;
     }
 
@@ -101,7 +102,7 @@ function TenancyForm() {
       )}
 
       <div className="form-group">
-        <label className="form-label">Associated Flat</label>
+        <label className="form-label">{t('associatedFlat')}</label>
         {flats.length > 0 ? (
           <select
             className="form-select"
@@ -109,7 +110,7 @@ function TenancyForm() {
             onChange={(e) => setFlatId(e.target.value)}
             required
           >
-            <option value="" disabled>Select a Flat</option>
+            <option value="" disabled>{t('selectFlat')}</option>
             {flats.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.title} ({f.address})
@@ -129,11 +130,11 @@ function TenancyForm() {
       </div>
 
       <div className="form-group">
-        <label className="form-label">Tenant Name</label>
+        <label className="form-label">{t('tenantNameLabel')}</label>
         <input
           type="text"
           className="form-input"
-          placeholder="e.g. Ivan Petrov"
+          placeholder={t('tenantNamePlaceholder')}
           value={tenantName}
           onChange={(e) => setTenantName(e.target.value)}
           required
@@ -141,20 +142,20 @@ function TenancyForm() {
       </div>
 
       <div className="form-group">
-        <label className="form-label">Tenant Phone / Telegram Contact</label>
+        <label className="form-label">{t('tenantContactLabel')}</label>
         <input
           type="text"
           className="form-input"
-          placeholder="e.g. +7 999 123-45-67 or @ivan_p"
+          placeholder={t('tenantContactPlaceholder')}
           value={tenantContact}
           onChange={(e) => setTenantContact(e.target.value)}
           required
         />
       </div>
 
-      <div style={{ display: 'flex', gap: 12 }}>
-        <div className="form-group" style={{ flex: 1 }}>
-          <label className="form-label">Tenancy Start Date</label>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <div className="form-group" style={{ flex: '1 1 140px' }}>
+          <label className="form-label">{t('startDateLabel')}</label>
           <input
             type="date"
             className="form-input"
@@ -163,8 +164,8 @@ function TenancyForm() {
             required
           />
         </div>
-        <div className="form-group" style={{ flex: 1 }}>
-          <label className="form-label">Tenancy End Date</label>
+        <div className="form-group" style={{ flex: '1 1 140px' }}>
+          <label className="form-label">{t('endDateLabel')}</label>
           <input
             type="date"
             className="form-input"
@@ -175,9 +176,9 @@ function TenancyForm() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 12 }}>
-        <div className="form-group" style={{ flex: 1 }}>
-          <label className="form-label">Monthly Rent (RUB)</label>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <div className="form-group" style={{ flex: '1 1 140px' }}>
+          <label className="form-label">{t('monthlyRentLabel')}</label>
           <input
             type="number"
             min="0"
@@ -187,8 +188,8 @@ function TenancyForm() {
             required
           />
         </div>
-        <div className="form-group" style={{ flex: 1 }}>
-          <label className="form-label">Security Deposit (RUB)</label>
+        <div className="form-group" style={{ flex: '1 1 140px' }}>
+          <label className="form-label">{t('securityDepositLabel')}</label>
           <input
             type="number"
             min="0"
@@ -201,7 +202,7 @@ function TenancyForm() {
       </div>
 
       <div className="form-group">
-        <label className="form-label">Monthly Payment Due Day (1 - 31)</label>
+        <label className="form-label">{t('dueDayLabel')}</label>
         <input
           type="number"
           min="1"
@@ -215,10 +216,10 @@ function TenancyForm() {
 
       <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
         <button type="button" className="btn-secondary" onClick={() => router.back()} style={{ flex: 1 }}>
-          Cancel
+          {t('cancel')}
         </button>
         <button type="submit" className="btn-primary" disabled={submitting} style={{ flex: 1 }}>
-          {submitting ? 'Creating...' : 'Create Tenancy'}
+          {submitting ? t('creating') : t('createTenancy')}
         </button>
       </div>
     </form>
@@ -226,10 +227,11 @@ function TenancyForm() {
 }
 
 export default function NewTenancyPage() {
+  const { t } = useLanguage();
   return (
     <div>
-      <h1 className="title-primary" style={{ marginBottom: 20 }}>Create New Tenancy</h1>
-      <Suspense fallback={<p style={{ color: 'var(--text-secondary)' }}>Loading form...</p>}>
+      <h1 className="title-primary" style={{ marginBottom: 20 }}>{t('createTenancyTitle')}</h1>
+      <Suspense fallback={<p style={{ color: 'var(--text-secondary)' }}>{t('loading')}</p>}>
         <TenancyForm />
       </Suspense>
     </div>
