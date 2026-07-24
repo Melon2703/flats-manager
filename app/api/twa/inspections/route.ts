@@ -9,12 +9,19 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const tenancyId = searchParams.get('tenancy_id') || '';
-  const type = searchParams.get('type') as 'move_in' | 'move_out' | null;
+  const rawType = searchParams.get('type');
+
+  if (rawType && rawType !== 'move_in' && rawType !== 'move_out') {
+    return NextResponse.json({ error: 'Invalid inspection type' }, { status: 400 });
+  }
+
+  const type = rawType as 'move_in' | 'move_out' | null;
 
   if (type && tenancyId) {
     const checklist = await db.getLatestInspectionChecklist(tenancyId, type);
     return NextResponse.json(checklist || null);
   }
+
 
   const checklists = await db.getInspectionChecklists(tenancyId);
   return NextResponse.json(checklists);

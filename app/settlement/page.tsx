@@ -29,6 +29,9 @@ function SettlementForm() {
   const [elecMoveOut, setElecMoveOut] = useState<number>(0);
   const [waterMoveIn, setWaterMoveIn] = useState<number>(0);
   const [waterMoveOut, setWaterMoveOut] = useState<number>(0);
+  const [gasMoveIn, setGasMoveIn] = useState<number>(0);
+  const [gasMoveOut, setGasMoveOut] = useState<number>(0);
+
 
   // Damage photo evidence urls
   const [damagePhotoUrl, setDamagePhotoUrl] = useState('');
@@ -88,16 +91,18 @@ function SettlementForm() {
           if (moveIn?.meter_readings_json) {
             setElecMoveIn(moveIn.meter_readings_json.electricity || 0);
             setWaterMoveIn(moveIn.meter_readings_json.water || 0);
+            setGasMoveIn(moveIn.meter_readings_json.gas || 0);
           }
           if (moveOut?.meter_readings_json) {
             setElecMoveOut(moveOut.meter_readings_json.electricity || 0);
             setWaterMoveOut(moveOut.meter_readings_json.water || 0);
+            setGasMoveOut(moveOut.meter_readings_json.gas || 0);
           }
 
           if (moveIn?.meter_readings_json && moveOut?.meter_readings_json) {
             const util = calculateUtilityDifference(
-              { electricity: moveIn.meter_readings_json.electricity, water: moveIn.meter_readings_json.water },
-              { electricity: moveOut.meter_readings_json.electricity, water: moveOut.meter_readings_json.water }
+              { electricity: moveIn.meter_readings_json.electricity, water: moveIn.meter_readings_json.water, gas: moveIn.meter_readings_json.gas },
+              { electricity: moveOut.meter_readings_json.electricity, water: moveOut.meter_readings_json.water, gas: moveOut.meter_readings_json.gas }
             );
             setDeductions((prev) => ({ ...prev, utilities: Math.round(util.total_utility_cost) }));
           }
@@ -122,12 +127,13 @@ function SettlementForm() {
 
   function applyUtilityCalc() {
     const util = calculateUtilityDifference(
-      { electricity: elecMoveIn, water: waterMoveIn },
-      { electricity: elecMoveOut, water: waterMoveOut }
+      { electricity: elecMoveIn, water: waterMoveIn, gas: gasMoveIn },
+      { electricity: elecMoveOut, water: waterMoveOut, gas: gasMoveOut }
     );
     setDeductions((prev) => ({ ...prev, utilities: Math.round(util.total_utility_cost) }));
     setShowUtilityCalc(false);
   }
+
 
   function addDamagePhoto() {
     if (damagePhotoUrl.trim()) {
@@ -255,7 +261,7 @@ function SettlementForm() {
             <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-blue)', marginBottom: 8 }}>
               Compute Utility Cost from Move-In vs Move-Out Readings
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: '0.85rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: '0.85rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem' }}>Elec Move-In (kWh)</label>
                 <input
@@ -292,7 +298,26 @@ function SettlementForm() {
                   onChange={(e) => setWaterMoveOut(Number(e.target.value))}
                 />
               </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem' }}>Gas Move-In (m³)</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={gasMoveIn}
+                  onChange={(e) => setGasMoveIn(Number(e.target.value))}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem' }}>Gas Move-Out (m³)</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={gasMoveOut}
+                  onChange={(e) => setGasMoveOut(Number(e.target.value))}
+                />
+              </div>
             </div>
+
             <button
               type="button"
               className="btn-primary"

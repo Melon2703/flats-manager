@@ -23,20 +23,27 @@ export interface MeterRates {
   gas_rate?: number;
 }
 
+export const DEFAULT_METER_RATES: Required<MeterRates> = {
+  electricity_rate: 6.5,
+  water_rate: 50,
+  gas_rate: 7,
+};
+
 export function calculateUtilityDifference(
   moveIn: MeterReadings,
   moveOut: MeterReadings,
-  rates: MeterRates = { electricity_rate: 6.5, water_rate: 50, gas_rate: 7 }
+  rates: MeterRates = DEFAULT_METER_RATES
 ): { electricity_cost: number; water_cost: number; gas_cost: number; total_utility_cost: number } {
   const elecDiff = Math.max(0, (moveOut.electricity || 0) - (moveIn.electricity || 0));
   const waterDiff = Math.max(0, (moveOut.water || 0) - (moveIn.water || 0));
   const gasDiff = Math.max(0, (moveOut.gas || 0) - (moveIn.gas || 0));
 
-  const electricity_cost = elecDiff * (rates.electricity_rate ?? 6.5);
-  const water_cost = waterDiff * (rates.water_rate ?? 50);
-  const gas_cost = gasDiff * (rates.gas_rate ?? 7);
+  const electricity_cost = elecDiff * (rates.electricity_rate ?? DEFAULT_METER_RATES.electricity_rate);
+  const water_cost = waterDiff * (rates.water_rate ?? DEFAULT_METER_RATES.water_rate);
+  const gas_cost = gasDiff * (rates.gas_rate ?? DEFAULT_METER_RATES.gas_rate);
 
   const total_utility_cost = electricity_cost + water_cost + gas_cost;
+
 
   return {
     electricity_cost,
