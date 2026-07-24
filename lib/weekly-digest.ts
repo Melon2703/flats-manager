@@ -1,4 +1,5 @@
 import { db } from './db';
+import { Flat, Tenancy, ExpectedPayment } from './types';
 import { sendTelegramMessage, TelegramInlineButton } from './telegram';
 
 export interface WeeklyDigestMetrics {
@@ -18,6 +19,27 @@ export interface WeeklyDigestResult {
   metrics: WeeklyDigestMetrics;
 }
 
+function resolvePaymentContext(
+  payment: ExpectedPayment,
+  tenancies: Tenancy[],
+  flats: Flat[]
+): { tenantName: string; flatTitle: string } {
+  const tenancy = tenancies.find((item) => item.id === payment.tenancy_id);
+  const flat = flats.find((item) => item.id === tenancy?.flat_id);
+  return {
+    tenantName: tenancy?.tenant_name || 'Tenant',
+    flatTitle: flat?.title || 'Flat',
+  };
+}
+
+function getPrimaryRecipientChatId(): string | undefined {
+  const allowedIds = (process.env.TELEGRAM_ALLOWED_USER_IDS || '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+  return allowedIds[0];
+}
+
 export async function compileWeeklyDigest(referenceDate: Date = new Date()): Promise<WeeklyDigestResult> {
   const flats = await db.getFlats();
   const tenancies = await db.getTenancies();
@@ -27,35 +49,41 @@ export async function compileWeeklyDigest(referenceDate: Date = new Date()): Pro
   const todayStr = referenceDate.toISOString().split('T')[0];
   const currentMonthPrefix = todayStr.slice(0, 7);
 
-  // 1. Monthly Revenue Collection (payments paid in current month)
-  const currentMonthRecords = paymentRecords.filter((r) => r.paid_at.startsWith(currentMonthPrefix));
-  let monthlyRevenue = currentMonthRecords.reduce((acc, curr) => acc + curr.amount, 0);
+  // Active tenancies & flats
+  const activeTenancies = tenancies.filter((tenancy) => tenancy.status === 'active');
+  const activeTenancyIds = new Set(activeTenancies.map((tenancy) => tenancy.id));
+  const activeTenanciesCount = activeTenancies.length;
+  const vacantFlatsCount = flats.filter((flat) => flat.status === 'vacant').length;
 
+  // 1. Monthly Revenue Collection (payments actually collected in current month)
+  const currentMonthRecords = paymentRecords.filter((record) =>
+    record.paid_at.startsWith(currentMonthPrefix)
+  );
+  let monthlyRevenue = currentMonthRecords.reduce((acc, record) => acc + record.amount, 0);
+
+  // Fallback to fully paid expected payments in current month if no payment records exist
   if (monthlyRevenue === 0) {
     const paidPayments = expectedPayments.filter(
-      (p) => (p.status === 'Paid' || p.status === 'Partial') && p.due_date.startsWith(currentMonthPrefix)
+      (payment) => payment.status === 'Paid' && payment.due_date.startsWith(currentMonthPrefix)
     );
-    monthlyRevenue = paidPayments.reduce((acc, curr) => acc + curr.amount, 0);
+    monthlyRevenue = paidPayments.reduce((acc, payment) => acc + payment.amount, 0);
   }
 
-  // Active tenancies and vacant flats
-  const activeTenancies = tenancies.filter((t) => t.status === 'active');
-  const activeTenanciesCount = activeTenancies.length;
-  const vacantFlatsCount = flats.filter((f) => f.status === 'vacant').length;
-
-  // 2. Overdue Rent Payments (unpaid and due before reference date)
-  const overduePayments = expectedPayments.filter((p) => {
-    if (p.status === 'Paid' || p.status === 'Waived') return false;
-    return p.due_date < todayStr;
+  // 2. Overdue Rent Payments (active tenancies, unpaid and due before reference date)
+  const overduePayments = expectedPayments.filter((payment) => {
+    if (!activeTenancyIds.has(payment.tenancy_id)) return false;
+    if (payment.status === 'Paid' || payment.status === 'Waived') return false;
+    return payment.due_date < todayStr;
   });
 
-  // 3. Upcoming Payment Due Dates (next 7 days relative to reference date)
+  // 3. Upcoming Payment Due Dates (active tenancies, next 7 days relative to reference date)
   const sevenDaysLater = new Date(referenceDate.getTime() + 7 * 24 * 60 * 60 * 1000);
   const sevenDaysLaterStr = sevenDaysLater.toISOString().split('T')[0];
 
-  const upcomingPayments = expectedPayments.filter((p) => {
-    if (p.status === 'Paid' || p.status === 'Waived') return false;
-    return p.due_date >= todayStr && p.due_date <= sevenDaysLaterStr;
+  const upcomingPayments = expectedPayments.filter((payment) => {
+    if (!activeTenancyIds.has(payment.tenancy_id)) return false;
+    if (payment.status === 'Paid' || payment.status === 'Waived') return false;
+    return payment.due_date >= todayStr && payment.due_date <= sevenDaysLaterStr;
   });
 
   // 4. Upcoming Lease Move-ins & Move-outs (next 30 days relative to reference date)
@@ -63,21 +91,21 @@ export async function compileWeeklyDigest(referenceDate: Date = new Date()): Pro
   const thirtyDaysLaterStr = thirtyDaysLater.toISOString().split('T')[0];
 
   const upcomingMoveIns = tenancies.filter(
-    (t) => t.start_date >= todayStr && t.start_date <= thirtyDaysLaterStr
+    (tenancy) => tenancy.start_date >= todayStr && tenancy.start_date <= thirtyDaysLaterStr
   );
 
   const upcomingMoveOuts = tenancies.filter(
-    (t) => t.end_date >= todayStr && t.end_date <= thirtyDaysLaterStr
+    (tenancy) => tenancy.end_date >= todayStr && tenancy.end_date <= thirtyDaysLaterStr
   );
 
   // 5. Missing Checklists / Docs (active tenancies lacking move-in inspection checklist)
   const missingDocItems: Array<{ flatTitle: string; tenantName: string; reason: string }> = [];
 
   for (const tenancy of activeTenancies) {
-    const flat = flats.find((f) => f.id === tenancy.flat_id);
+    const flat = flats.find((item) => item.id === tenancy.flat_id);
     const flatTitle = flat?.title || 'Flat';
     const checklists = await db.getInspectionChecklists(tenancy.id);
-    const hasMoveIn = checklists.some((c) => c.inspection_type === 'move_in');
+    const hasMoveIn = checklists.some((checklist) => checklist.inspection_type === 'move_in');
     if (!hasMoveIn) {
       missingDocItems.push({
         flatTitle,
@@ -97,18 +125,14 @@ export async function compileWeeklyDigest(referenceDate: Date = new Date()): Pro
   const buttons: TelegramInlineButton[][] = [];
 
   if (overduePayments.length > 0) {
-    for (const p of overduePayments) {
-      const t = tenancies.find((ten) => ten.id === p.tenancy_id);
-      const f = flats.find((fl) => fl.id === t?.flat_id);
-      const flatTitle = f?.title || 'Flat';
-      const tenantName = t?.tenant_name || 'Tenant';
-
-      digestText += `- ${tenantName} (${flatTitle}): ${p.amount.toLocaleString('en-US')} RUB (Due ${p.due_date})\n`;
+    for (const payment of overduePayments) {
+      const { tenantName, flatTitle } = resolvePaymentContext(payment, tenancies, flats);
+      digestText += `- ${tenantName} (${flatTitle}): ${payment.amount.toLocaleString('en-US')} RUB (Due ${payment.due_date})\n`;
 
       buttons.push([
         {
           text: `📋 Draft Reminder (${flatTitle})`,
-          callback_data: `copy_reminder:${p.id}:ru`,
+          callback_data: `copy_reminder:${payment.id}:ru`,
         },
       ]);
     }
@@ -120,12 +144,9 @@ export async function compileWeeklyDigest(referenceDate: Date = new Date()): Pro
   // Upcoming Payments Section
   digestText += `📅 **Upcoming Rent Due (Next 7 Days)** (${upcomingPayments.length}):\n`;
   if (upcomingPayments.length > 0) {
-    for (const p of upcomingPayments) {
-      const t = tenancies.find((ten) => ten.id === p.tenancy_id);
-      const f = flats.find((fl) => fl.id === t?.flat_id);
-      const flatTitle = f?.title || 'Flat';
-      const tenantName = t?.tenant_name || 'Tenant';
-      digestText += `- ${tenantName} (${flatTitle}): ${p.amount.toLocaleString('en-US')} RUB (Due ${p.due_date})\n`;
+    for (const payment of upcomingPayments) {
+      const { tenantName, flatTitle } = resolvePaymentContext(payment, tenancies, flats);
+      digestText += `- ${tenantName} (${flatTitle}): ${payment.amount.toLocaleString('en-US')} RUB (Due ${payment.due_date})\n`;
     }
   } else {
     digestText += `None\n`;
@@ -136,13 +157,13 @@ export async function compileWeeklyDigest(referenceDate: Date = new Date()): Pro
   const totalTransitions = upcomingMoveIns.length + upcomingMoveOuts.length;
   digestText += `🔑 **Upcoming Lease Transitions (Next 30 Days)** (${totalTransitions}):\n`;
   if (totalTransitions > 0) {
-    for (const t of upcomingMoveIns) {
-      const f = flats.find((fl) => fl.id === t.flat_id);
-      digestText += `- Move-in: ${t.tenant_name} (${f?.title || 'Flat'}) on ${t.start_date}\n`;
+    for (const tenancy of upcomingMoveIns) {
+      const flat = flats.find((item) => item.id === tenancy.flat_id);
+      digestText += `- Move-in: ${tenancy.tenant_name} (${flat?.title || 'Flat'}) on ${tenancy.start_date}\n`;
     }
-    for (const t of upcomingMoveOuts) {
-      const f = flats.find((fl) => fl.id === t.flat_id);
-      digestText += `- Move-out: ${t.tenant_name} (${f?.title || 'Flat'}) on ${t.end_date}\n`;
+    for (const tenancy of upcomingMoveOuts) {
+      const flat = flats.find((item) => item.id === tenancy.flat_id);
+      digestText += `- Move-out: ${tenancy.tenant_name} (${flat?.title || 'Flat'}) on ${tenancy.end_date}\n`;
     }
   } else {
     digestText += `None\n`;
@@ -178,9 +199,7 @@ export async function compileWeeklyDigest(referenceDate: Date = new Date()): Pro
 
 export async function sendWeeklyDigest(targetChatId?: string | number): Promise<WeeklyDigestResult> {
   const digest = await compileWeeklyDigest();
-  const recipientChatId =
-    targetChatId ||
-    (process.env.TELEGRAM_ALLOWED_USER_IDS || '').split(',').map((id) => id.trim()).filter(Boolean)[0];
+  const recipientChatId = targetChatId || getPrimaryRecipientChatId();
 
   if (recipientChatId) {
     await sendTelegramMessage(
