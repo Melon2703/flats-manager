@@ -3,7 +3,7 @@ import { GET as getFlats, POST as createFlat } from '../app/api/twa/flats/route'
 import { GET as getTenancies, POST as createTenancy } from '../app/api/twa/tenancies/route';
 import { GET as getPayments, POST as recordPayment } from '../app/api/twa/payments/route';
 import { POST as calculateSettlementApi } from '../app/api/twa/inspections/settlement/route';
-import { createTestInitData } from '../lib/security';
+import { createTestInitData } from './helpers/auth-test-utils';
 import { db } from '../lib/db';
 
 const botToken = 'test_bot_token';

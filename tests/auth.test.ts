@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { isAuthorizedUser, validateTelegramInitData, createTestInitData, authenticateTWA } from '../lib/auth';
+import { isAuthorizedUser, validateTelegramInitData, authenticateTWA } from '../lib/auth';
+import { createTestInitData, createTestInitDataWithoutUser } from './helpers/auth-test-utils';
 
 describe('Auth Security Middleware (lib/auth.ts)', () => {
   it('correctly checks user authorization against whitelist', () => {
@@ -28,7 +29,7 @@ describe('Auth Security Middleware (lib/auth.ts)', () => {
     expect(isValid).toBe(false);
   });
 
-  it('authenticateTWA helper verifies request headers and whitelist', () => {
+  it('authenticateTWA verifies valid request headers and whitelisted user', () => {
     const botToken = '123456789:ABCdefGHIjklMNOpqrsTUVwxyz';
     process.env.TELEGRAM_BOT_TOKEN = botToken;
     process.env.TELEGRAM_ALLOWED_USER_IDS = '123456';
@@ -47,5 +48,17 @@ describe('Auth Security Middleware (lib/auth.ts)', () => {
 
     const missingReq = new Request('http://localhost:3000/api/twa/flats');
     expect(authenticateTWA(missingReq)).toBe(false);
+  });
+
+  it('authenticateTWA rejects requests with valid HMAC signature but missing user field', () => {
+    const botToken = '123456789:ABCdefGHIjklMNOpqrsTUVwxyz';
+    process.env.TELEGRAM_BOT_TOKEN = botToken;
+    process.env.TELEGRAM_ALLOWED_USER_IDS = '123456';
+
+    const initDataNoUser = createTestInitDataWithoutUser(botToken);
+    const req = new Request('http://localhost:3000/api/twa/flats', {
+      headers: { 'x-telegram-init-data': initDataNoUser },
+    });
+    expect(authenticateTWA(req)).toBe(false);
   });
 });
