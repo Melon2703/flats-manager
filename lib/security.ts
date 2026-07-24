@@ -7,7 +7,7 @@ export function isAuthorizedUser(userId: number | null | undefined, allowedUserI
   if (!userId) return false;
   const allowedStr = allowedUserIdsStr || process.env.TELEGRAM_ALLOWED_USER_IDS || '';
   if (!allowedStr) return false;
-  
+
   const allowedIds = allowedStr
     .split(',')
     .map((id) => id.trim())
@@ -18,7 +18,6 @@ export function isAuthorizedUser(userId: number | null | undefined, allowedUserI
 
 /**
  * Validates Telegram Web App initData HMAC SHA-256 signature.
- * Reference: Telegram Web Apps Documentation
  */
 export function validateTelegramInitData(initDataStr: string, botToken: string): boolean {
   if (!initDataStr || !botToken) return false;
@@ -30,7 +29,6 @@ export function validateTelegramInitData(initDataStr: string, botToken: string):
 
     urlParams.delete('hash');
 
-    // Sort parameters alphabetically
     const dataCheckArr: string[] = [];
     urlParams.forEach((val, key) => {
       dataCheckArr.push(`${key}=${val}`);
@@ -38,13 +36,11 @@ export function validateTelegramInitData(initDataStr: string, botToken: string):
     dataCheckArr.sort();
     const dataCheckString = dataCheckArr.join('\n');
 
-    // Secret key = HMAC-SHA-256("WebAppData", botToken)
     const secretKey = crypto
       .createHmac('sha256', 'WebAppData')
       .update(botToken)
       .digest();
 
-    // Calculated hash = HMAC-SHA-256(secretKey, dataCheckString)
     const calculatedHash = crypto
       .createHmac('sha256', secretKey)
       .update(dataCheckString)
@@ -54,6 +50,30 @@ export function validateTelegramInitData(initDataStr: string, botToken: string):
   } catch {
     return false;
   }
+}
+
+/**
+ * Centralized TWA API authentication middleware helper.
+ */
+export function authenticateTWA(req: Request): boolean {
+  const initData = req.headers.get('x-telegram-init-data') || '';
+  const botToken = process.env.TELEGRAM_BOT_TOKEN || '';
+
+  if (!initData) return false;
+  if (!validateTelegramInitData(initData, botToken)) return false;
+
+  try {
+    const params = new URLSearchParams(initData);
+    const userStr = params.get('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      if (!isAuthorizedUser(user.id)) return false;
+    }
+  } catch {
+    return false;
+  }
+
+  return true;
 }
 
 /**

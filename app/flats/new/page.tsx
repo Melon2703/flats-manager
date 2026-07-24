@@ -25,7 +25,6 @@ export default function NewFlatPage() {
         body: JSON.stringify({ title, address, status }),
       });
 
-      // Trigger haptic feedback if in Telegram
       (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
       router.push('/');
     } catch {
@@ -57,7 +56,7 @@ export default function NewFlatPage() {
           <input
             type="text"
             className="form-input"
-            placeholder="e.g. Lenina St 45, Apt 12"
+            placeholder="e.g. Lenina St 45, Flat 12"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             required

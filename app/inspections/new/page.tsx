@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 
 export default function InspectionChecklistPage() {
   const router = useRouter();
+  const [tenancyId, setTenancyId] = useState('');
   const [inspectionType, setInspectionType] = useState<'move_in' | 'move_out'>('move_in');
   const [tenantName, setTenantName] = useState('');
   const [electricMeter, setElectricMeter] = useState('');
   const [waterMeter, setWaterMeter] = useState('');
-  const [appliancesNotes, setAppliancesNotes] = useState('');
+  const [inventoryNotes, setInventoryNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -17,9 +18,26 @@ export default function InspectionChecklistPage() {
     setSubmitting(true);
 
     try {
+      const initData = (window as any).Telegram?.WebApp?.initData || '';
+      await fetch('/api/twa/inspections', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-telegram-init-data': initData,
+        },
+        body: JSON.stringify({
+          tenancy_id: tenancyId || crypto.randomUUID(),
+          inspection_type: inspectionType,
+          items_json: { inventory_notes: inventoryNotes, tenant_name: tenantName },
+          meter_readings_json: { electricity: electricMeter, water: waterMeter },
+        }),
+      });
+
       (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
       alert(`Checklist recorded successfully for ${inspectionType === 'move_in' ? 'Move-In' : 'Move-Out'}`);
       router.push('/');
+    } catch {
+      alert('Failed to record inspection checklist');
     } finally {
       setSubmitting(false);
     }
@@ -28,7 +46,7 @@ export default function InspectionChecklistPage() {
   return (
     <div>
       <h1 className="title-primary" style={{ marginBottom: 4 }}>Inspection Checklist</h1>
-      <p className="subtitle">Record room conditions & utility meter readings</p>
+      <p className="subtitle">Record inventory state & utility meter readings</p>
 
       <form onSubmit={handleSubmit} className="glass-card">
         <div className="form-group">
@@ -80,13 +98,13 @@ export default function InspectionChecklistPage() {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Appliance & Room Condition Notes</label>
+          <label className="form-label">Appliance & Inventory State Notes</label>
           <textarea
             className="form-textarea"
             rows={4}
             placeholder="Clean kitchen, refrigerator working, slight scratch on hallway wall..."
-            value={appliancesNotes}
-            onChange={(e) => setAppliancesNotes(e.target.value)}
+            value={inventoryNotes}
+            onChange={(e) => setInventoryNotes(e.target.value)}
           />
         </div>
 

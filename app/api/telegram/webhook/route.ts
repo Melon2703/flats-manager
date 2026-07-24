@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isAuthorizedUser } from '@/lib/security';
 import { db } from '@/lib/db';
-import { sendTelegramMessage } from '@/lib/telegram';
+import { sendTelegramMessage, getTelegramFileBuffer } from '@/lib/telegram';
 import { generateReminderDraft } from '@/lib/reminders';
 import { transcribeVoiceNote, parseReceiptImage } from '@/lib/ai';
 
@@ -80,8 +80,24 @@ export async function POST(req: Request) {
           flat_id: flatId,
           category,
           content_text: `Forward capture attached (${category})`,
-          event_type: 'receipt',
+          event_type: category === 'receipt' ? 'receipt' : 'note',
         });
+
+        if (category === 'receipt') {
+          const tenancies = await db.getTenancies(flatId);
+          if (tenancies.length > 0) {
+            const payments = await db.getExpectedPayments(tenancies[0].id);
+            const overdue = payments.find((p) => p.status === 'Overdue' || p.status === 'Pending' || p.status === 'Due Today');
+            if (overdue) {
+              await db.createPaymentRecord({
+                expected_payment_id: overdue.id,
+                amount: overdue.amount,
+                payment_method: 'Bank Transfer',
+                paid_at: new Date().toISOString(),
+              });
+            }
+          }
+        }
 
         await sendTelegramMessage(chatId!, `✅ Media assigned to Flat successfully.`);
         return NextResponse.json({ success: true });
@@ -103,9 +119,10 @@ export async function POST(req: Request) {
 
       // Handle Voice Notes (User Story 8)
       if (msg.voice) {
-        const transcript = await transcribeVoiceNote();
+        const fileBuffer = await getTelegramFileBuffer(msg.voice.file_id);
+        const transcript = await transcribeVoiceNote(fileBuffer, 'audio/ogg');
         const flats = await db.getFlats();
-        const targetFlat = flats[0]; // Assign to active flat or present keyboard
+        const targetFlat = flats[0];
 
         if (targetFlat) {
           await db.createTimelineEvent({
@@ -131,7 +148,11 @@ export async function POST(req: Request) {
 
       // Handle Photo / Forwarded Receipts (User Story 7)
       if (msg.photo || msg.document) {
-        const parsed = await parseReceiptImage();
+        const photoObj = msg.photo ? msg.photo[msg.photo.length - 1] : null;
+        const fileId = photoObj?.file_id || msg.document?.file_id;
+        const fileBuffer = fileId ? await getTelegramFileBuffer(fileId) : null;
+
+        const parsed = await parseReceiptImage(fileBuffer);
         const flats = await db.getFlats();
 
         const keyboard = flats.slice(0, 5).map((f) => [

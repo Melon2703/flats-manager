@@ -23,9 +23,9 @@ export function calculateSettlement(params: CalculateSettlementParams): Settleme
 
   const itemized_breakdown = params.itemized_breakdown || [
     { category: 'Unpaid Rent', description: 'Outstanding balance', amount: deductions.unpaid_rent || 0 },
-    { category: 'Utilities', description: 'Final utility bills', amount: deductions.utilities || 0 },
-    { category: 'Cleaning', description: 'End of lease cleaning', amount: deductions.cleaning || 0 },
-    { category: 'Damages', description: 'Property damage repairs', amount: deductions.damages || 0 },
+    { category: 'Utilities', description: 'Final utility balances', amount: deductions.utilities || 0 },
+    { category: 'Cleaning', description: 'End of tenancy cleaning', amount: deductions.cleaning || 0 },
+    { category: 'Damages', description: 'Flat damage repairs', amount: deductions.damages || 0 },
   ];
 
   return {
@@ -49,8 +49,19 @@ export function generateSettlementSummarySheet(summary: SettlementSummary, tenan
   sheet += `- Unpaid Rent: ${summary.deductions.unpaid_rent.toLocaleString('en-US')} RUB\n`;
   sheet += `- Utilities: ${summary.deductions.utilities.toLocaleString('en-US')} RUB\n`;
   sheet += `- Cleaning Fee: ${summary.deductions.cleaning.toLocaleString('en-US')} RUB\n`;
-  sheet += `- Damages: ${summary.deductions.damages.toLocaleString('en-US')} RUB\n\n`;
+  sheet += `- Damages: ${summary.deductions.damages.toLocaleString('en-US')} RUB\n`;
 
+  if (summary.itemized_breakdown && summary.itemized_breakdown.length > 0) {
+    const photosWithLinks = summary.itemized_breakdown.filter((item) => item.photo_urls && item.photo_urls.length > 0);
+    if (photosWithLinks.length > 0) {
+      sheet += `\n--- EVIDENCE & PHOTO LINKS ---\n`;
+      for (const item of photosWithLinks) {
+        sheet += `- ${item.category}: ${item.photo_urls?.join(', ')}\n`;
+      }
+    }
+  }
+
+  sheet += `\n`;
   if (summary.refund_amount >= 0) {
     sheet += `✅ **Final Deposit Refund Amount**: ${formattedRefund} RUB`;
   } else {

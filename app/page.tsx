@@ -9,7 +9,6 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize Telegram WebApp SDK if present
     if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
       const tg = (window as any).Telegram.WebApp;
       tg.ready();
@@ -27,15 +26,14 @@ export default function HomePage() {
           const data = await res.json();
           setFlats(data);
         } else {
-          // Fallback sample flats for local browser testing
           setFlats([
-            { id: '1', title: 'Flat 101 - City Center', address: 'Lenina St. 45, Apt 12', status: 'active', created_at: new Date().toISOString() },
-            { id: '2', title: 'Flat 202 - Riverside View', address: 'Naberezhnaya 10, Apt 5', status: 'vacant', created_at: new Date().toISOString() },
+            { id: '1', title: 'Flat 101 - City Center', address: 'Lenina St. 45, Flat 12', status: 'active', created_at: new Date().toISOString() },
+            { id: '2', title: 'Flat 202 - Riverside View', address: 'Naberezhnaya 10, Flat 5', status: 'vacant', created_at: new Date().toISOString() },
           ]);
         }
       } catch {
         setFlats([
-          { id: '1', title: 'Flat 101 - City Center', address: 'Lenina St. 45, Apt 12', status: 'active', created_at: new Date().toISOString() },
+          { id: '1', title: 'Flat 101 - City Center', address: 'Lenina St. 45, Flat 12', status: 'active', created_at: new Date().toISOString() },
         ]);
       } finally {
         setLoading(false);
@@ -58,7 +56,7 @@ export default function HomePage() {
       </div>
 
       {loading ? (
-        <p style={{ color: 'var(--text-secondary)' }}>Loading properties...</p>
+        <p style={{ color: 'var(--text-secondary)' }}>Loading flats...</p>
       ) : flats.length === 0 ? (
         <div className="glass-card" style={{ textAlign: 'center', padding: 40 }}>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>No flats added yet.</p>

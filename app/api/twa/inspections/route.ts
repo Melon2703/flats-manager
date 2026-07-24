@@ -8,10 +8,10 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
-  const flatId = searchParams.get('flat_id') || undefined;
+  const tenancyId = searchParams.get('tenancy_id') || '';
 
-  const tenancies = await db.getTenancies(flatId);
-  return NextResponse.json(tenancies);
+  const checklists = await db.getInspectionChecklists(tenancyId);
+  return NextResponse.json(checklists);
 }
 
 export async function POST(req: Request) {
@@ -20,6 +20,6 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const tenancy = await db.createTenancy(body);
-  return NextResponse.json(tenancy);
+  const checklist = await db.createInspectionChecklist(body);
+  return NextResponse.json(checklist);
 }
