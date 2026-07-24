@@ -1,11 +1,41 @@
 import { NextResponse } from 'next/server';
 import { isAuthorizedUser } from '@/lib/security';
 import { db } from '@/lib/db';
-import { sendTelegramMessage, getTelegramFileBuffer } from '@/lib/telegram';
+import { sendTelegramMessage, getTelegramFileBuffer, TelegramInlineButton } from '@/lib/telegram';
 import { generateReminderDraft, sendDueRentAlerts } from '@/lib/reminders';
 import { transcribeVoiceNote, parseReceiptImage } from '@/lib/ai';
 import { uploadMediaToStorage } from '@/lib/supabase';
 import { storePendingMedia, getPendingMedia, deletePendingMedia } from '@/lib/pending-media';
+import { Flat } from '@/lib/types';
+
+function buildMediaInlineKeyboard(
+  flats: Flat[],
+  selectedCategory: string,
+  mediaId: string
+): TelegramInlineButton[][] {
+  // Category tags row
+  const categories = [
+    { label: '💳 Rent Receipt', tag: 'Rent Receipt' },
+    { label: '💸 Expense', tag: 'Expense' },
+    { label: '⚡ Utility', tag: 'Utility' },
+    { label: '📝 Note', tag: 'Note' },
+  ];
+
+  const categoryRow: TelegramInlineButton[] = categories.map((cat) => ({
+    text: cat.tag === selectedCategory ? `✅ ${cat.tag}` : cat.label,
+    callback_data: `set_cat:${cat.tag}:${mediaId}`,
+  }));
+
+  // Flats rows
+  const flatRows: TelegramInlineButton[][] = flats.map((f) => [
+    {
+      text: `🏠 ${f.title}`,
+      callback_data: `assign_flat:${f.id}:${selectedCategory}:${mediaId}`,
+    },
+  ]);
+
+  return [categoryRow, ...flatRows];
+}
 
 export async function POST(req: Request) {
   try {
@@ -77,6 +107,28 @@ export async function POST(req: Request) {
         }
       }
 
+      if (data.startsWith('set_cat:')) {
+        const parts = data.split(':');
+        const newCategory = parts[1];
+        const mediaId = parts[2];
+
+        const pendingItem = getPendingMedia(mediaId);
+        if (pendingItem) {
+          pendingItem.category = newCategory;
+          storePendingMedia(pendingItem);
+        }
+
+        let flats = await db.getFlats();
+        if (flats.length === 0) {
+          const sampleFlat = await db.createFlat({ title: 'Flat 101', address: 'Default St 1', status: 'active' });
+          flats = [sampleFlat];
+        }
+
+        const keyboard = buildMediaInlineKeyboard(flats, newCategory, mediaId);
+        await sendTelegramMessage(chatId!, `Selected Category: <b>${newCategory}</b>. Now tap a flat to assign:`, keyboard);
+        return NextResponse.json({ success: true, category: newCategory });
+      }
+
       if (data.startsWith('assign_flat:')) {
         const parts = data.split(':');
         const flatId = parts[1];
@@ -103,22 +155,7 @@ export async function POST(req: Request) {
         });
 
         if (category === 'receipt' || category === 'Rent Receipt') {
-          const tenancies = await db.getTenancies(flatId);
-          if (tenancies.length > 0) {
-            const payments = await db.getExpectedPayments(tenancies[0].id);
-            const overdue = payments.find(
-              (p) => p.status === 'Overdue' || p.status === 'Pending' || p.status === 'Due Today'
-            );
-            if (overdue) {
-              await db.createPaymentRecord({
-                expected_payment_id: overdue.id,
-                amount: overdue.amount,
-                payment_method: 'Bank Transfer',
-                receipt_url: mediaUrl,
-                paid_at: new Date().toISOString(),
-              });
-            }
-          }
+          await db.recordPaymentForFlatReceipt(flatId, mediaUrl);
         }
 
         if (mediaId) {
@@ -156,6 +193,12 @@ export async function POST(req: Request) {
       const mediaId = 'm_' + Math.random().toString(36).slice(2, 10);
       const isForwarded = !!(msg.forward_from || msg.forward_from_chat || msg.forward_date || msg.forward_origin);
 
+      let flats = await db.getFlats();
+      if (flats.length === 0) {
+        const sampleFlat = await db.createFlat({ title: 'Flat 101', address: 'Default St 1', status: 'active' });
+        flats = [sampleFlat];
+      }
+
       // Handle Voice Notes
       if (msg.voice) {
         const rawBuffer = await getTelegramFileBuffer(msg.voice.file_id);
@@ -174,19 +217,10 @@ export async function POST(req: Request) {
           isForwarded,
         });
 
-        let flats = await db.getFlats();
-        if (flats.length === 0) {
-          const sampleFlat = await db.createFlat({ title: 'Flat 101', address: 'Default St 1', status: 'active' });
-          flats = [sampleFlat];
-        }
-
-        const keyboard = flats.map((f) => [
-          { text: `🏠 ${f.title}`, callback_data: `assign_flat:${f.id}:Note:${mediaId}` },
-        ]);
-
+        const keyboard = buildMediaInlineKeyboard(flats, 'Note', mediaId);
         await sendTelegramMessage(
           chatId!,
-          `🎙️ <b>Voice Note Transcribed</b>:\n"${transcript}"\n\nAssign to flat:`,
+          `🎙️ <b>Voice Note Transcribed</b>:\n"${transcript}"\n\nSelect Category & Assign to flat:`,
           keyboard
         );
 
@@ -217,19 +251,10 @@ export async function POST(req: Request) {
           isForwarded,
         });
 
-        let flats = await db.getFlats();
-        if (flats.length === 0) {
-          const sampleFlat = await db.createFlat({ title: 'Flat 101', address: 'Default St 1', status: 'active' });
-          flats = [sampleFlat];
-        }
-
-        const keyboard = flats.map((f) => [
-          { text: `🏠 ${f.title}`, callback_data: `assign_flat:${f.id}:Rent Receipt:${mediaId}` },
-        ]);
-
+        const keyboard = buildMediaInlineKeyboard(flats, 'Rent Receipt', mediaId);
         await sendTelegramMessage(
           chatId!,
-          `📄 <b>Receipt / Media Captured</b>\nAmount: ${parsed.amount || 'N/A'}\nAssign to flat:`,
+          `📄 <b>Receipt / Media Captured</b>\nAmount: ${parsed.amount || 'N/A'}\nSelect Category & Assign to flat:`,
           keyboard
         );
 
@@ -257,23 +282,37 @@ export async function POST(req: Request) {
           isForwarded,
         });
 
-        let flats = await db.getFlats();
-        if (flats.length === 0) {
-          const sampleFlat = await db.createFlat({ title: 'Flat 101', address: 'Default St 1', status: 'active' });
-          flats = [sampleFlat];
-        }
-
-        const keyboard = flats.map((f) => [
-          { text: `🏠 ${f.title}`, callback_data: `assign_flat:${f.id}:Utility:${mediaId}` },
-        ]);
-
+        const keyboard = buildMediaInlineKeyboard(flats, 'Utility', mediaId);
         await sendTelegramMessage(
           chatId!,
-          `📑 <b>Document Captured</b>: ${docName}\nAssign to flat:`,
+          `📑 <b>Document Captured</b>: ${docName}\nSelect Category & Assign to flat:`,
           keyboard
         );
 
         return NextResponse.json({ success: true, media_id: mediaId });
+      }
+
+      // Handle Plain Forwarded Text Messages
+      if (isForwarded && msg.text) {
+        const contentText = `Forwarded message: "${msg.text}"`;
+
+        storePendingMedia({
+          mediaId,
+          mediaUrl: '',
+          contentText,
+          eventType: 'note',
+          category: 'Note',
+          isForwarded: true,
+        });
+
+        const keyboard = buildMediaInlineKeyboard(flats, 'Note', mediaId);
+        await sendTelegramMessage(
+          chatId!,
+          `📥 <b>Forwarded Text Message Intercepted</b>:\n"${msg.text}"\n\nSelect Category & Assign to flat:`,
+          keyboard
+        );
+
+        return NextResponse.json({ success: true, media_id: mediaId, text: msg.text });
       }
     }
 

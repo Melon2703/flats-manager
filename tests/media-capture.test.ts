@@ -190,7 +190,7 @@ describe('Bot Media Forward Capture & Voice STT Transcription (Ticket 6)', () =>
     expect(records[0].receipt_url).toContain('flats-media');
   });
 
-  it('handles forwarded utility bill document capture and records Utility timeline event', async () => {
+  it('handles forwarded utility document capture and records Utility timeline event', async () => {
     const flat = await db.createFlat({ title: 'Flat 303', address: 'Sadovaya 15', status: 'active' });
 
     const docPayload = {
@@ -200,7 +200,7 @@ describe('Bot Media Forward Capture & Voice STT Transcription (Ticket 6)', () =>
         from: { id: 123456, first_name: 'Anya' },
         chat: { id: 123456 },
         forward_from_chat: { id: -100123, title: 'Utility Channel' },
-        document: { file_id: 'doc_utility_pdf', file_name: 'utility_bill_july.pdf', mime_type: 'application/pdf' },
+        document: { file_id: 'doc_utility_pdf', file_name: 'utility_document_july.pdf', mime_type: 'application/pdf' },
       },
     };
 
@@ -237,7 +237,81 @@ describe('Bot Media Forward Capture & Voice STT Transcription (Ticket 6)', () =>
     const events = await db.getTimelineEvents(flat.id);
     expect(events.length).toBe(1);
     expect(events[0].category).toBe('Utility');
-    expect(events[0].content_text).toContain('utility_bill_july.pdf');
+    expect(events[0].content_text).toContain('utility_document_july.pdf');
     expect(events[0].media_url).toContain('flats-media');
+  });
+
+  it('handles forwarded plain text note capture and category tag switching via set_cat callback', async () => {
+    const flat = await db.createFlat({ title: 'Flat 404', address: 'Rubinshteyna 5', status: 'active' });
+
+    const textPayload = {
+      update_id: 40,
+      message: {
+        message_id: 801,
+        from: { id: 123456, first_name: 'Anya' },
+        chat: { id: 123456 },
+        forward_from: { id: 555444, first_name: 'Plumber' },
+        forward_date: 1700000000,
+        text: 'Radiator valve replaced in bathroom.',
+      },
+    };
+
+    const req1 = new Request('http://localhost:3000/api/telegram/webhook', {
+      method: 'POST',
+      body: JSON.stringify(textPayload),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const res1 = await POST(req1);
+    expect(res1.status).toBe(200);
+    const body1 = await res1.json();
+    expect(body1.media_id).toBeDefined();
+
+    // Change category to Expense
+    const catPayload = {
+      update_id: 41,
+      callback_query: {
+        id: 'cb_cat_1',
+        from: { id: 123456, first_name: 'Anya' },
+        message: { message_id: 802, chat: { id: 123456 } },
+        data: `set_cat:Expense:${body1.media_id}`,
+      },
+    };
+
+    const req2 = new Request('http://localhost:3000/api/telegram/webhook', {
+      method: 'POST',
+      body: JSON.stringify(catPayload),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const res2 = await POST(req2);
+    expect(res2.status).toBe(200);
+    const body2 = await res2.json();
+    expect(body2.category).toBe('Expense');
+
+    // Assign to Flat 404
+    const assignPayload = {
+      update_id: 42,
+      callback_query: {
+        id: 'cb_assign_1',
+        from: { id: 123456, first_name: 'Anya' },
+        message: { message_id: 803, chat: { id: 123456 } },
+        data: `assign_flat:${flat.id}:Expense:${body1.media_id}`,
+      },
+    };
+
+    const req3 = new Request('http://localhost:3000/api/telegram/webhook', {
+      method: 'POST',
+      body: JSON.stringify(assignPayload),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const res3 = await POST(req3);
+    expect(res3.status).toBe(200);
+
+    const events = await db.getTimelineEvents(flat.id);
+    expect(events.length).toBe(1);
+    expect(events[0].category).toBe('Expense');
+    expect(events[0].content_text).toContain('Radiator valve replaced in bathroom.');
   });
 });

@@ -349,6 +349,27 @@ export const db = {
     return record;
   },
 
+  async recordPaymentForFlatReceipt(flatId: string, receiptUrl?: string | null): Promise<PaymentRecord | null> {
+    const tenancies = await this.getTenancies(flatId);
+    if (tenancies.length === 0) return null;
+
+    const activeTenancy = tenancies.find((t) => t.status === 'active') || tenancies[0];
+    const payments = await this.getExpectedPayments(activeTenancy.id);
+    const targetPayment = payments.find(
+      (p) => p.status === 'Overdue' || p.status === 'Pending' || p.status === 'Due Today'
+    );
+
+    if (!targetPayment) return null;
+
+    return await this.createPaymentRecord({
+      expected_payment_id: targetPayment.id,
+      amount: targetPayment.amount,
+      payment_method: 'Bank Transfer',
+      receipt_url: receiptUrl || null,
+      paid_at: new Date().toISOString(),
+    });
+  },
+
   // TIMELINE EVENTS
   async getTimelineEvents(flatId: string): Promise<TimelineEvent[]> {
     if (supabaseClient) {
