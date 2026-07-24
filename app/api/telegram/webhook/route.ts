@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { isAuthorizedUser } from '@/lib/security';
 import { db } from '@/lib/db';
 import { sendTelegramMessage, getTelegramFileBuffer } from '@/lib/telegram';
-import { generateReminderDraft } from '@/lib/reminders';
+import { generateReminderDraft, sendDueRentAlerts } from '@/lib/reminders';
 import { transcribeVoiceNote, parseReceiptImage } from '@/lib/ai';
 
 export async function POST(req: Request) {
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       chatId = payload.message.chat?.id;
     } else if (payload.callback_query) {
       userId = payload.callback_query.from?.id;
-      chatId = payload.callback_query.message?.chat?.id;
+      chatId = payload.callback_query.message?.chat?.id || userId;
     }
 
     // 2. Authorization Whitelist check
@@ -50,7 +50,10 @@ export async function POST(req: Request) {
       }
 
       if (data.startsWith('copy_reminder:')) {
-        const paymentId = data.replace('copy_reminder:', '');
+        const parts = data.split(':');
+        const paymentId = parts[1];
+        const lang = parts[2] === 'ru' ? 'ru' : 'en';
+
         const payment = await db.getExpectedPayment(paymentId);
 
         if (payment) {
@@ -63,6 +66,7 @@ export async function POST(req: Request) {
             amount: payment.amount,
             dueDate: payment.due_date,
             status: payment.status,
+            lang,
           });
 
           const responseText = `📋 **Reminder Draft (Tap to copy)**:\n\n<code>${reminderDraft}</code>`;
@@ -115,6 +119,14 @@ export async function POST(req: Request) {
         const welcomeText = `🏡 **Anya's Mom Rental Back Office**\n\nManage flats, tenancies, expected payments, payment receipts, and inspection settlements right here in Telegram!`;
         await sendTelegramMessage(chatId!, welcomeText);
         return NextResponse.json({ success: true });
+      }
+
+      if (msg.text === '/reminders' || msg.text === '/due') {
+        const alerts = await sendDueRentAlerts(chatId!);
+        if (alerts.length === 0) {
+          await sendTelegramMessage(chatId!, '🎉 All clear! No due or overdue rent payments right now.');
+        }
+        return NextResponse.json({ success: true, count: alerts.length });
       }
 
       // Handle Voice Notes (User Story 8)
