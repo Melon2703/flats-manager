@@ -10,6 +10,7 @@ describe('Auth Security Middleware (lib/auth.ts)', () => {
     expect(isAuthorizedUser(999999, allowedIds)).toBe(false);
     expect(isAuthorizedUser(null, allowedIds)).toBe(false);
     expect(isAuthorizedUser(undefined, allowedIds)).toBe(false);
+    expect(isAuthorizedUser(999999, '*')).toBe(true);
   });
 
   it('validates authentic Telegram initData HMAC signatures', async () => {

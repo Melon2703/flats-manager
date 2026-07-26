@@ -11,6 +11,8 @@ export function isAuthorizedUser(userId: number | null | undefined, allowedUserI
     .map((id) => id.trim())
     .filter(Boolean);
 
+  if (allowedIds.includes('*')) return true;
+
   return allowedIds.includes(String(userId));
 }
 
