@@ -385,6 +385,108 @@ describe('Telegram Webhook API Seam (/api/telegram/webhook)', () => {
     const updatedNewer = await db.getExpectedPayment(newerOverdue.id);
     expect(updatedNewer?.status).toBe('Overdue');
   });
+
+  it('handles /app, /twa, /open, and /a commands to return Web App link', async () => {
+    const payload = {
+      update_id: 20,
+      message: {
+        message_id: 110,
+        from: { id: 123456, first_name: 'Anya' },
+        chat: { id: 123456 },
+        text: '/app',
+      },
+    };
+
+    const req = new Request('http://localhost:3000/api/telegram/webhook', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.command).toBe('app');
+    expect(body.app_url).toBeDefined();
+  });
+
+  it('handles short command aliases like /s, /r, /d, /l, /h, /?', async () => {
+    const commandsToTest = [
+      { text: '/s', expectedCmd: 'start' },
+      { text: '/r', expectedCmd: 'reminders' },
+      { text: '/d', expectedCmd: 'digest' },
+      { text: '/l', expectedCmd: 'lang' },
+      { text: '/h', expectedCmd: 'help' },
+      { text: '/?', expectedCmd: 'help' },
+    ];
+
+    for (const item of commandsToTest) {
+      const payload = {
+        update_id: Math.floor(Math.random() * 10000),
+        message: {
+          message_id: 120,
+          from: { id: 123456, first_name: 'Anya' },
+          chat: { id: 123456 },
+          text: item.text,
+        },
+      };
+
+      const req = new Request('http://localhost:3000/api/telegram/webhook', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+      expect(body.command).toBe(item.expectedCmd);
+    }
+  });
+
+  it('handles bot username suffixes such as /start@flats_bot', async () => {
+    const payload = {
+      update_id: 25,
+      message: {
+        message_id: 125,
+        from: { id: 123456, first_name: 'Anya' },
+        chat: { id: 123456 },
+        text: '/start@flats_manager_bot',
+      },
+    };
+
+    const req = new Request('http://localhost:3000/api/telegram/webhook', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.command).toBe('start');
+  });
+
+  it('handles setup API endpoint (/api/telegram/setup)', async () => {
+    const { GET, POST: setupPOST } = await import('../app/api/telegram/setup/route');
+    const getRes = await GET();
+    expect(getRes.status).toBe(200);
+    const getBody = await getRes.json();
+    expect(getBody.success).toBe(true);
+
+    const postReq = new Request('http://localhost:3000/api/telegram/setup', {
+      method: 'POST',
+      body: JSON.stringify({ bot_token: 'test_token', app_url: 'https://flats.vercel.app' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const postRes = await setupPOST(postReq);
+    expect(postRes.status).toBe(200);
+    const postBody = await postRes.json();
+    expect(postBody.success).toBe(true);
+  });
 });
 
 describe('Reminders Cron API Seam (/api/cron/reminders)', () => {

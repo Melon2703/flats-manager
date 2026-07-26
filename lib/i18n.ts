@@ -183,6 +183,15 @@ export const translations = {
       '📷 <b>Чеки и фото:</b> Отправляйте фото банковских чеков или показаний счетчиков.\n' +
       '🎙 <b>Голосовые заметки:</b> Запишите голосовое сообщение для расшифровки и записи в историю квартиры.',
     botOpenWebApp: '📱 Открыть веб-приложение',
+    botOpenWebAppPrompt: '📱 <b>Нажмите кнопку ниже, чтобы открыть веб-приложение Flats Manager:</b>',
+    botHelpTitle: 'ℹ️ <b>Справка и команды бота</b>',
+    botHelpDesc: '<b>Доступные команды:</b>\n' +
+      '• /start (/s) - Главное меню и ссылка на TWA\n' +
+      '• /app (/a, /twa) - Открыть веб-приложение\n' +
+      '• /reminders (/r) - Проверить оплату и задолженности\n' +
+      '• /digest (/d) - Еженедельный отчет\n' +
+      '• /lang (/l) - Сменить язык\n' +
+      '• /help (/h, /?) - Справка по командам',
     botCheckDueRent: '🔔 Проверить оплату',
     botWeeklyDigest: '📊 Еженедельный отчет',
     botChangeLanguage: '🌐 Сменить язык',
@@ -379,6 +388,15 @@ export const translations = {
       '📷 <b>Photos & Receipts:</b> Send photos of bank transfer receipts or meter readings.\n' +
       '🎙 <b>Voice Notes:</b> Record a voice note to transcribe and store key updates on flat timelines.',
     botOpenWebApp: '📱 Open Web App',
+    botOpenWebAppPrompt: '📱 <b>Tap the button below to open Flats Manager Web App:</b>',
+    botHelpTitle: 'ℹ️ <b>Bot Help & Commands</b>',
+    botHelpDesc: '<b>Available commands:</b>\n' +
+      '• /start (/s) - Main menu & TWA link\n' +
+      '• /app (/a, /twa) - Open Web App (TWA)\n' +
+      '• /reminders (/r) - Check due rent & reminders\n' +
+      '• /digest (/d) - Weekly snapshot digest\n' +
+      '• /lang (/l) - Change language\n' +
+      '• /help (/h, /?) - Show help & commands',
     botCheckDueRent: '🔔 Check Due Rent',
     botWeeklyDigest: '📊 Weekly Digest',
     botChangeLanguage: '🌐 Change Language',

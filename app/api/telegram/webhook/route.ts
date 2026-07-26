@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isAuthorizedUser } from '@/lib/security';
 import { db } from '@/lib/db';
-import { sendTelegramMessage, getTelegramFileBuffer, TelegramInlineButton } from '@/lib/telegram';
+import { sendTelegramMessage, getTelegramFileBuffer, getAppUrl, setupTelegramBot, TelegramInlineButton } from '@/lib/telegram';
 import { generateReminderDraft, sendDueRentAlerts } from '@/lib/reminders';
 import { sendWeeklyDigest } from '@/lib/weekly-digest';
 import { transcribeVoiceNote, parseReceiptImage } from '@/lib/ai';
@@ -11,14 +11,12 @@ import { getTranslation, Language } from '@/lib/i18n';
 import { Flat } from '@/lib/types';
 
 function buildMainMenuKeyboard(lang: Language): TelegramInlineButton[][] {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.WEBAPP_URL || process.env.APP_URL;
+  const appUrl = getAppUrl();
   const buttons: TelegramInlineButton[][] = [];
 
-  if (appUrl) {
-    buttons.push([
-      { text: getTranslation(lang, 'botOpenWebApp'), web_app: { url: appUrl } },
-    ]);
-  }
+  buttons.push([
+    { text: getTranslation(lang, 'botOpenWebApp'), web_app: { url: appUrl } },
+  ]);
 
   buttons.push([
     { text: getTranslation(lang, 'botCheckDueRent'), callback_data: 'cmd_reminders' },
@@ -30,6 +28,13 @@ function buildMainMenuKeyboard(lang: Language): TelegramInlineButton[][] {
   ]);
 
   return buttons;
+}
+
+function buildWebAppKeyboard(lang: Language): TelegramInlineButton[][] {
+  const appUrl = getAppUrl();
+  return [
+    [{ text: getTranslation(lang, 'botOpenWebApp'), web_app: { url: appUrl } }],
+  ];
 }
 
 function buildMainMenuMessage(lang: Language): string {
@@ -267,51 +272,74 @@ export async function POST(req: Request) {
     if (payload.message) {
       const msg = payload.message;
 
-      // Handle Commands
-      if (msg.text === '/start' || msg.text === '/help') {
-        await sendTelegramMessage(chatId!, buildMainMenuMessage(userLang), buildMainMenuKeyboard(userLang));
-        return NextResponse.json({ success: true });
-      }
+      // Handle Commands & Shortcuts
+      const rawText = msg.text?.trim() || '';
 
-      if (msg.text?.startsWith('/lang') || msg.text?.startsWith('/language')) {
-        const textParts = msg.text.trim().split(/\s+/);
-        if (textParts.length > 1) {
-          const requestedLang = textParts[1].toLowerCase();
-          if (requestedLang === 'ru' || requestedLang === 'en') {
-            await db.setUserLanguage(userId, requestedLang as Language);
-            const confirmMsg =
-              requestedLang === 'ru'
-                ? getTranslation('ru', 'botLangChangedRu')
-                : getTranslation('en', 'botLangChangedEn');
+      if (rawText.startsWith('/')) {
+        setupTelegramBot().catch(() => {});
 
-            await sendTelegramMessage(
-              chatId!,
-              `${confirmMsg}\n\n${buildMainMenuMessage(requestedLang as Language)}`,
-              buildMainMenuKeyboard(requestedLang as Language)
-            );
-            return NextResponse.json({ success: true, lang: requestedLang });
+        const parts = rawText.split(/\s+/);
+        const rawCmd = parts[0].slice(1).split('@')[0].toLowerCase();
+        const cmdArgs = parts.slice(1);
+
+        if (rawCmd === 'start' || rawCmd === 's' || rawCmd === 'menu') {
+          await sendTelegramMessage(chatId!, buildMainMenuMessage(userLang), buildMainMenuKeyboard(userLang));
+          return NextResponse.json({ success: true, command: 'start' });
+        }
+
+        if (rawCmd === 'app' || rawCmd === 'twa' || rawCmd === 'open' || rawCmd === 'a') {
+          const promptMsg = getTranslation(userLang, 'botOpenWebAppPrompt');
+          await sendTelegramMessage(chatId!, promptMsg, buildWebAppKeyboard(userLang));
+          return NextResponse.json({ success: true, command: 'app', app_url: getAppUrl() });
+        }
+
+        if (rawCmd === 'reminders' || rawCmd === 'due' || rawCmd === 'r') {
+          const alerts = await sendDueRentAlerts(chatId!, userLang);
+          if (alerts.length === 0) {
+            await sendTelegramMessage(chatId!, getTranslation(userLang, 'botNoDuePayments'));
           }
+          return NextResponse.json({ success: true, command: 'reminders', count: alerts.length });
         }
 
-        await sendTelegramMessage(
-          chatId!,
-          getTranslation(userLang, 'botSelectLanguagePrompt'),
-          buildLanguageKeyboard()
-        );
-        return NextResponse.json({ success: true, menu: 'lang' });
-      }
-
-      if (msg.text === '/reminders' || msg.text === '/due') {
-        const alerts = await sendDueRentAlerts(chatId!, userLang);
-        if (alerts.length === 0) {
-          await sendTelegramMessage(chatId!, getTranslation(userLang, 'botNoDuePayments'));
+        if (rawCmd === 'digest' || rawCmd === 'weekly' || rawCmd === 'snapshot' || rawCmd === 'd') {
+          await sendWeeklyDigest(chatId!, userLang);
+          return NextResponse.json({ success: true, command: 'digest' });
         }
-        return NextResponse.json({ success: true, count: alerts.length });
-      }
 
-      if (msg.text === '/digest' || msg.text === '/weekly' || msg.text === '/snapshot') {
-        await sendWeeklyDigest(chatId!, userLang);
-        return NextResponse.json({ success: true });
+        if (rawCmd === 'lang' || rawCmd === 'language' || rawCmd === 'l') {
+          if (cmdArgs.length > 0) {
+            const requestedLang = cmdArgs[0].toLowerCase();
+            if (requestedLang === 'ru' || requestedLang === 'en') {
+              await db.setUserLanguage(userId, requestedLang as Language);
+              const confirmMsg =
+                requestedLang === 'ru'
+                  ? getTranslation('ru', 'botLangChangedRu')
+                  : getTranslation('en', 'botLangChangedEn');
+
+              await sendTelegramMessage(
+                chatId!,
+                `${confirmMsg}\n\n${buildMainMenuMessage(requestedLang as Language)}`,
+                buildMainMenuKeyboard(requestedLang as Language)
+              );
+              return NextResponse.json({ success: true, command: 'lang', lang: requestedLang });
+            }
+          }
+
+          await sendTelegramMessage(
+            chatId!,
+            getTranslation(userLang, 'botSelectLanguagePrompt'),
+            buildLanguageKeyboard()
+          );
+          return NextResponse.json({ success: true, command: 'lang', menu: 'lang' });
+        }
+
+        if (rawCmd === 'help' || rawCmd === 'h' || rawCmd === '?') {
+          const helpTitle = getTranslation(userLang, 'botHelpTitle');
+          const helpDesc = getTranslation(userLang, 'botHelpDesc');
+          const helpMsg = `${helpTitle}\n\n${helpDesc}`;
+          await sendTelegramMessage(chatId!, helpMsg, buildMainMenuKeyboard(userLang));
+          return NextResponse.json({ success: true, command: 'help' });
+        }
       }
 
       const mediaId = 'm_' + Math.random().toString(36).slice(2, 10);
@@ -439,8 +467,15 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, media_id: mediaId, text: msg.text });
       }
 
-      // Handle Unhandled Regular Text Messages (e.g. "hi", "help")
+      // Handle Unhandled Regular Text Messages (e.g. "hi", "app", "twa")
       if (msg.text && !isForwarded) {
+        const lower = msg.text.trim().toLowerCase();
+        if (lower === 'app' || lower === 'twa') {
+          const promptMsg = getTranslation(userLang, 'botOpenWebAppPrompt');
+          await sendTelegramMessage(chatId!, promptMsg, buildWebAppKeyboard(userLang));
+          return NextResponse.json({ success: true, command: 'app', app_url: getAppUrl() });
+        }
+
         await sendTelegramMessage(chatId!, buildMainMenuMessage(userLang), buildMainMenuKeyboard(userLang));
         return NextResponse.json({ success: true, menu_sent: true });
       }
