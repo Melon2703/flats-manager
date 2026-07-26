@@ -96,4 +96,14 @@ CREATE POLICY "Service role full access on payment_records" ON public.payment_re
 CREATE POLICY "Service role full access on timeline_events" ON public.timeline_events FOR ALL USING (true);
 CREATE POLICY "Service role full access on inspection_checklists" ON public.inspection_checklists FOR ALL USING (true);
 
+-- 9. User Settings Table
+CREATE TABLE IF NOT EXISTS public.user_settings (
+  user_id TEXT PRIMARY KEY,
+  language TEXT NOT NULL DEFAULT 'ru' CHECK (language IN ('ru', 'en')),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Service role full access on user_settings" ON public.user_settings FOR ALL USING (true);
+
 

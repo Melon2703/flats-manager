@@ -3,22 +3,59 @@ import { isAuthorizedUser } from '@/lib/security';
 import { db } from '@/lib/db';
 import { sendTelegramMessage, getTelegramFileBuffer, TelegramInlineButton } from '@/lib/telegram';
 import { generateReminderDraft, sendDueRentAlerts } from '@/lib/reminders';
+import { sendWeeklyDigest } from '@/lib/weekly-digest';
 import { transcribeVoiceNote, parseReceiptImage } from '@/lib/ai';
 import { uploadMediaToStorage } from '@/lib/supabase';
 import { storePendingMedia, getPendingMedia, deletePendingMedia } from '@/lib/pending-media';
+import { getTranslation, Language } from '@/lib/i18n';
 import { Flat } from '@/lib/types';
+
+function buildMainMenuKeyboard(lang: Language): TelegramInlineButton[][] {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.WEBAPP_URL || process.env.APP_URL;
+  const buttons: TelegramInlineButton[][] = [];
+
+  if (appUrl) {
+    buttons.push([
+      { text: getTranslation(lang, 'botOpenWebApp'), web_app: { url: appUrl } },
+    ]);
+  }
+
+  buttons.push([
+    { text: getTranslation(lang, 'botCheckDueRent'), callback_data: 'cmd_reminders' },
+    { text: getTranslation(lang, 'botWeeklyDigest'), callback_data: 'cmd_digest' },
+  ]);
+
+  buttons.push([
+    { text: getTranslation(lang, 'botChangeLanguage'), callback_data: 'cmd_lang' },
+  ]);
+
+  return buttons;
+}
+
+function buildMainMenuMessage(lang: Language): string {
+  return `${getTranslation(lang, 'botMenuTitle')}\n\n${getTranslation(lang, 'botMenuDesc')}`;
+}
+
+function buildLanguageKeyboard(): TelegramInlineButton[][] {
+  return [
+    [
+      { text: '🇷🇺 Русский', callback_data: 'set_lang:ru' },
+      { text: '🇬🇧 English', callback_data: 'set_lang:en' },
+    ],
+  ];
+}
 
 function buildMediaInlineKeyboard(
   flats: Flat[],
   selectedCategory: string,
-  mediaId: string
+  mediaId: string,
+  lang: Language = 'ru'
 ): TelegramInlineButton[][] {
-  // Category tags row
   const categories = [
-    { label: '💳 Rent Receipt', tag: 'Rent Receipt' },
-    { label: '💸 Expense', tag: 'Expense' },
-    { label: '⚡ Utility', tag: 'Utility' },
-    { label: '📝 Note', tag: 'Note' },
+    { label: getTranslation(lang, 'catRentReceipt'), tag: 'Rent Receipt' },
+    { label: getTranslation(lang, 'catExpense'), tag: 'Expense' },
+    { label: getTranslation(lang, 'catUtility'), tag: 'Utility' },
+    { label: getTranslation(lang, 'catNote'), tag: 'Note' },
   ];
 
   const categoryRow: TelegramInlineButton[] = categories.map((cat) => ({
@@ -26,7 +63,6 @@ function buildMediaInlineKeyboard(
     callback_data: `set_cat:${cat.tag}:${mediaId}`,
   }));
 
-  // Flats rows
   const flatRows: TelegramInlineButton[][] = flats.map((f) => [
     {
       text: `🏠 ${f.title}`,
@@ -58,10 +94,52 @@ export async function POST(req: Request) {
       return NextResponse.json({ ignored: true }, { status: 200 });
     }
 
+    const userLang: Language = await db.getUserLanguage(userId);
+
     // 3. Handle Callback Queries
     if (payload.callback_query) {
       const cb = payload.callback_query;
       const data: string = cb.data || '';
+
+      if (data === 'cmd_lang') {
+        await sendTelegramMessage(
+          chatId!,
+          getTranslation(userLang, 'botSelectLanguagePrompt'),
+          buildLanguageKeyboard()
+        );
+        return NextResponse.json({ success: true, menu: 'lang' });
+      }
+
+      if (data.startsWith('set_lang:')) {
+        const targetLang = data.replace('set_lang:', '') === 'en' ? 'en' : 'ru';
+        await db.setUserLanguage(userId, targetLang);
+
+        const confirmMsg =
+          targetLang === 'ru'
+            ? getTranslation('ru', 'botLangChangedRu')
+            : getTranslation('en', 'botLangChangedEn');
+
+        await sendTelegramMessage(
+          chatId!,
+          `${confirmMsg}\n\n${buildMainMenuMessage(targetLang)}`,
+          buildMainMenuKeyboard(targetLang)
+        );
+
+        return NextResponse.json({ success: true, lang: targetLang });
+      }
+
+      if (data === 'cmd_reminders') {
+        const alerts = await sendDueRentAlerts(chatId!, userLang);
+        if (alerts.length === 0) {
+          await sendTelegramMessage(chatId!, getTranslation(userLang, 'botNoDuePayments'));
+        }
+        return NextResponse.json({ success: true, count: alerts.length });
+      }
+
+      if (data === 'cmd_digest') {
+        await sendWeeklyDigest(chatId!, userLang);
+        return NextResponse.json({ success: true });
+      }
 
       if (data.startsWith('record_paid:')) {
         const paymentId = data.replace('record_paid:', '');
@@ -75,7 +153,11 @@ export async function POST(req: Request) {
             paid_at: new Date().toISOString(),
           });
 
-          const msg = `✅ Payment of ${payment.amount.toLocaleString()} RUB recorded as PAID.`;
+          const msg =
+            userLang === 'ru'
+              ? `✅ Платеж на сумму ${payment.amount.toLocaleString('en-US')} руб. отмечен как ОПЛАЧЕН.`
+              : `✅ Payment of ${payment.amount.toLocaleString('en-US')} RUB recorded as PAID.`;
+
           await sendTelegramMessage(chatId!, msg);
           return NextResponse.json({ success: true, message: msg });
         }
@@ -93,15 +175,15 @@ export async function POST(req: Request) {
           const flat = tenancy ? await db.getFlat(tenancy.flat_id) : null;
 
           const reminderDraft = generateReminderDraft({
-            tenantName: tenancy?.tenant_name || 'Tenant',
-            flatTitle: flat?.title || 'Flat',
+            tenantName: tenancy?.tenant_name || (lang === 'ru' ? 'Арендатор' : 'Tenant'),
+            flatTitle: flat?.title || (lang === 'ru' ? 'Квартира' : 'Flat'),
             amount: payment.amount,
             dueDate: payment.due_date,
             status: payment.status,
             lang,
           });
 
-          const responseText = `📋 **Reminder Draft (Tap to copy)**:\n\n<code>${reminderDraft}</code>`;
+          const responseText = `📋 <b>Reminder Draft (Tap to copy)</b>:\n\n<code>${reminderDraft}</code>`;
           await sendTelegramMessage(chatId!, responseText);
           return NextResponse.json({ success: true, reminder_draft: reminderDraft });
         }
@@ -124,8 +206,13 @@ export async function POST(req: Request) {
           flats = [sampleFlat];
         }
 
-        const keyboard = buildMediaInlineKeyboard(flats, newCategory, mediaId);
-        await sendTelegramMessage(chatId!, `Selected Category: <b>${newCategory}</b>. Now tap a flat to assign:`, keyboard);
+        const keyboard = buildMediaInlineKeyboard(flats, newCategory, mediaId, userLang);
+        const categoryPrompt =
+          userLang === 'ru'
+            ? `Выбранная категория: <b>${newCategory}</b>. Теперь выберите квартиру:`
+            : `Selected Category: <b>${newCategory}</b>. Now tap a flat to assign:`;
+
+        await sendTelegramMessage(chatId!, categoryPrompt, keyboard);
         return NextResponse.json({ success: true, category: newCategory });
       }
 
@@ -163,8 +250,13 @@ export async function POST(req: Request) {
         }
 
         const flat = await db.getFlat(flatId);
-        const flatTitle = flat?.title || 'Flat';
-        await sendTelegramMessage(chatId!, `✅ Media assigned to <b>${flatTitle}</b> as <b>${category}</b>.`);
+        const flatTitle = flat?.title || (userLang === 'ru' ? 'Квартира' : 'Flat');
+        const confirmationMsg =
+          userLang === 'ru'
+            ? getTranslation('ru', 'botMediaAssigned').replace('{flat}', flatTitle).replace('{category}', category)
+            : getTranslation('en', 'botMediaAssigned').replace('{flat}', flatTitle).replace('{category}', category);
+
+        await sendTelegramMessage(chatId!, confirmationMsg);
         return NextResponse.json({ success: true, event });
       }
 
@@ -176,18 +268,50 @@ export async function POST(req: Request) {
       const msg = payload.message;
 
       // Handle Commands
-      if (msg.text === '/start') {
-        const welcomeText = `🏡 **Anya's Mom Rental Back Office**\n\nManage flats, tenancies, expected payments, payment receipts, and inspection settlements right here in Telegram!`;
-        await sendTelegramMessage(chatId!, welcomeText);
+      if (msg.text === '/start' || msg.text === '/help') {
+        await sendTelegramMessage(chatId!, buildMainMenuMessage(userLang), buildMainMenuKeyboard(userLang));
         return NextResponse.json({ success: true });
       }
 
+      if (msg.text?.startsWith('/lang') || msg.text?.startsWith('/language')) {
+        const textParts = msg.text.trim().split(/\s+/);
+        if (textParts.length > 1) {
+          const requestedLang = textParts[1].toLowerCase();
+          if (requestedLang === 'ru' || requestedLang === 'en') {
+            await db.setUserLanguage(userId, requestedLang as Language);
+            const confirmMsg =
+              requestedLang === 'ru'
+                ? getTranslation('ru', 'botLangChangedRu')
+                : getTranslation('en', 'botLangChangedEn');
+
+            await sendTelegramMessage(
+              chatId!,
+              `${confirmMsg}\n\n${buildMainMenuMessage(requestedLang as Language)}`,
+              buildMainMenuKeyboard(requestedLang as Language)
+            );
+            return NextResponse.json({ success: true, lang: requestedLang });
+          }
+        }
+
+        await sendTelegramMessage(
+          chatId!,
+          getTranslation(userLang, 'botSelectLanguagePrompt'),
+          buildLanguageKeyboard()
+        );
+        return NextResponse.json({ success: true, menu: 'lang' });
+      }
+
       if (msg.text === '/reminders' || msg.text === '/due') {
-        const alerts = await sendDueRentAlerts(chatId!);
+        const alerts = await sendDueRentAlerts(chatId!, userLang);
         if (alerts.length === 0) {
-          await sendTelegramMessage(chatId!, '🎉 All clear! No due or overdue rent payments right now.');
+          await sendTelegramMessage(chatId!, getTranslation(userLang, 'botNoDuePayments'));
         }
         return NextResponse.json({ success: true, count: alerts.length });
+      }
+
+      if (msg.text === '/digest' || msg.text === '/weekly' || msg.text === '/snapshot') {
+        await sendWeeklyDigest(chatId!, userLang);
+        return NextResponse.json({ success: true });
       }
 
       const mediaId = 'm_' + Math.random().toString(36).slice(2, 10);
@@ -217,13 +341,13 @@ export async function POST(req: Request) {
           isForwarded,
         });
 
-        const keyboard = buildMediaInlineKeyboard(flats, 'Note', mediaId);
-        await sendTelegramMessage(
-          chatId!,
-          `🎙️ <b>Voice Note Transcribed</b>:\n"${transcript}"\n\nSelect Category & Assign to flat:`,
-          keyboard
-        );
+        const keyboard = buildMediaInlineKeyboard(flats, 'Note', mediaId, userLang);
+        const promptMsg =
+          userLang === 'ru'
+            ? `🎙️ <b>Голосовая заметка расшифрована</b>:\n"${transcript}"\n\nВыберите категорию и привяжите к квартире:`
+            : `🎙️ <b>Voice Note Transcribed</b>:\n"${transcript}"\n\nSelect Category & Assign to flat:`;
 
+        await sendTelegramMessage(chatId!, promptMsg, keyboard);
         return NextResponse.json({ success: true, media_id: mediaId, transcript });
       }
 
@@ -251,13 +375,13 @@ export async function POST(req: Request) {
           isForwarded,
         });
 
-        const keyboard = buildMediaInlineKeyboard(flats, 'Rent Receipt', mediaId);
-        await sendTelegramMessage(
-          chatId!,
-          `📄 <b>Receipt / Media Captured</b>\nAmount: ${parsed.amount || 'N/A'}\nSelect Category & Assign to flat:`,
-          keyboard
-        );
+        const keyboard = buildMediaInlineKeyboard(flats, 'Rent Receipt', mediaId, userLang);
+        const promptMsg =
+          userLang === 'ru'
+            ? `📄 <b>Чек / Медиа получено</b>\nСумма: ${parsed.amount || 'Н/Д'}\nВыберите категорию и привяжите к квартире:`
+            : `📄 <b>Receipt / Media Captured</b>\nAmount: ${parsed.amount || 'N/A'}\nSelect Category & Assign to flat:`;
 
+        await sendTelegramMessage(chatId!, promptMsg, keyboard);
         return NextResponse.json({ success: true, media_id: mediaId, parsed });
       }
 
@@ -282,13 +406,13 @@ export async function POST(req: Request) {
           isForwarded,
         });
 
-        const keyboard = buildMediaInlineKeyboard(flats, 'Utility', mediaId);
-        await sendTelegramMessage(
-          chatId!,
-          `📑 <b>Document Captured</b>: ${docName}\nSelect Category & Assign to flat:`,
-          keyboard
-        );
+        const keyboard = buildMediaInlineKeyboard(flats, 'Utility', mediaId, userLang);
+        const promptMsg =
+          userLang === 'ru'
+            ? `📑 <b>Документ получен</b>: ${docName}\nВыберите категорию и привяжите к квартире:`
+            : `📑 <b>Document Captured</b>: ${docName}\nSelect Category & Assign to flat:`;
 
+        await sendTelegramMessage(chatId!, promptMsg, keyboard);
         return NextResponse.json({ success: true, media_id: mediaId });
       }
 
@@ -305,14 +429,20 @@ export async function POST(req: Request) {
           isForwarded: true,
         });
 
-        const keyboard = buildMediaInlineKeyboard(flats, 'Note', mediaId);
-        await sendTelegramMessage(
-          chatId!,
-          `📥 <b>Forwarded Text Message Intercepted</b>:\n"${msg.text}"\n\nSelect Category & Assign to flat:`,
-          keyboard
-        );
+        const keyboard = buildMediaInlineKeyboard(flats, 'Note', mediaId, userLang);
+        const promptMsg =
+          userLang === 'ru'
+            ? `📥 <b>Пересланное сообщение перехвачено</b>:\n"${msg.text}"\n\nВыберите категорию и привяжите к квартире:`
+            : `📥 <b>Forwarded Text Message Intercepted</b>:\n"${msg.text}"\n\nSelect Category & Assign to flat:`;
 
+        await sendTelegramMessage(chatId!, promptMsg, keyboard);
         return NextResponse.json({ success: true, media_id: mediaId, text: msg.text });
+      }
+
+      // Handle Unhandled Regular Text Messages (e.g. "hi", "help")
+      if (msg.text && !isForwarded) {
+        await sendTelegramMessage(chatId!, buildMainMenuMessage(userLang), buildMainMenuKeyboard(userLang));
+        return NextResponse.json({ success: true, menu_sent: true });
       }
     }
 

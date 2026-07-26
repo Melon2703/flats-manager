@@ -221,6 +221,170 @@ describe('Telegram Webhook API Seam (/api/telegram/webhook)', () => {
     expect(body.success).toBe(true);
     expect(body.count).toBe(1);
   });
+
+  it('responds with main menu for plain unhandled text messages like "hi"', async () => {
+    const payload = {
+      update_id: 10,
+      message: {
+        message_id: 103,
+        from: { id: 123456, first_name: 'Anya' },
+        chat: { id: 123456 },
+        text: 'hi',
+      },
+    };
+
+    const req = new Request('http://localhost:3000/api/telegram/webhook', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.menu_sent).toBe(true);
+  });
+
+  it('handles callback query [cmd_reminders] and triggers rent alerts', async () => {
+    const payload = {
+      update_id: 11,
+      callback_query: {
+        id: 'cb_126',
+        from: { id: 123456, first_name: 'Anya' },
+        message: { message_id: 205, chat: { id: 123456 } },
+        data: 'cmd_reminders',
+      },
+    };
+
+    const req = new Request('http://localhost:3000/api/telegram/webhook', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+  });
+
+  it('handles /lang command and returns language selection menu', async () => {
+    const payload = {
+      update_id: 13,
+      message: {
+        message_id: 104,
+        from: { id: 123456, first_name: 'Anya' },
+        chat: { id: 123456 },
+        text: '/lang',
+      },
+    };
+
+    const req = new Request('http://localhost:3000/api/telegram/webhook', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.menu).toBe('lang');
+  });
+
+  it('handles /lang ru command and updates user language preference to ru', async () => {
+    const payload = {
+      update_id: 14,
+      message: {
+        message_id: 105,
+        from: { id: 123456, first_name: 'Anya' },
+        chat: { id: 123456 },
+        text: '/lang ru',
+      },
+    };
+
+    const req = new Request('http://localhost:3000/api/telegram/webhook', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.lang).toBe('ru');
+
+    const savedLang = await db.getUserLanguage(123456);
+    expect(savedLang).toBe('ru');
+  });
+
+  it('handles callback query [set_lang:en] and updates user language preference to en', async () => {
+    const payload = {
+      update_id: 15,
+      callback_query: {
+        id: 'cb_128',
+        from: { id: 123456, first_name: 'Anya' },
+        message: { message_id: 207, chat: { id: 123456 } },
+        data: 'set_lang:en',
+      },
+    };
+
+    const req = new Request('http://localhost:3000/api/telegram/webhook', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.lang).toBe('en');
+
+    const savedLang = await db.getUserLanguage(123456);
+    expect(savedLang).toBe('en');
+  });
+
+  it('correctly matches receipt to the oldest overdue expected payment for a flat', async () => {
+    const flat = await db.createFlat({ title: 'Flat 202', address: 'Pushkina 5', status: 'active' });
+    const tenancy = await db.createTenancy({
+      flat_id: flat.id,
+      tenant_name: 'Boris',
+      tenant_contact: '+79110001122',
+      start_date: '2026-01-01',
+      end_date: '2026-12-31',
+      rent_amount: 50000,
+      deposit_amount: 50000,
+      due_day: 1,
+      status: 'active',
+    });
+
+    // Create an older overdue payment (May) and a newer overdue payment (June)
+    const olderOverdue = await db.createExpectedPayment({
+      tenancy_id: tenancy.id,
+      due_date: '2026-05-01',
+      amount: 50000,
+      status: 'Overdue',
+    });
+    const newerOverdue = await db.createExpectedPayment({
+      tenancy_id: tenancy.id,
+      due_date: '2026-06-01',
+      amount: 50000,
+      status: 'Overdue',
+    });
+
+    const record = await db.recordPaymentForFlatReceipt(flat.id, 'https://example.com/receipt.jpg');
+    expect(record).not.toBeNull();
+    expect(record?.expected_payment_id).toBe(olderOverdue.id);
+
+    const updatedOlder = await db.getExpectedPayment(olderOverdue.id);
+    expect(updatedOlder?.status).toBe('Paid');
+
+    const updatedNewer = await db.getExpectedPayment(newerOverdue.id);
+    expect(updatedNewer?.status).toBe('Overdue');
+  });
 });
 
 describe('Reminders Cron API Seam (/api/cron/reminders)', () => {

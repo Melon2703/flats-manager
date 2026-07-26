@@ -40,10 +40,13 @@ function getPrimaryRecipientChatId(): string | undefined {
   return allowedIds[0];
 }
 
-export async function compileWeeklyDigest(referenceDate: Date = new Date()): Promise<WeeklyDigestResult> {
+export async function compileWeeklyDigest(
+  referenceDate: Date = new Date(),
+  lang: 'ru' | 'en' = 'en'
+): Promise<WeeklyDigestResult> {
   const flats = await db.getFlats();
   const tenancies = await db.getTenancies();
-  const expectedPayments = await db.getExpectedPayments(undefined, undefined, undefined, false);
+  const expectedPayments = await db.getExpectedPayments(undefined, undefined, undefined, true);
   const paymentRecords = await db.getPaymentRecords();
 
   const todayStr = referenceDate.toISOString().split('T')[0];
@@ -103,83 +106,141 @@ export async function compileWeeklyDigest(referenceDate: Date = new Date()): Pro
 
   for (const tenancy of activeTenancies) {
     const flat = flats.find((item) => item.id === tenancy.flat_id);
-    const flatTitle = flat?.title || 'Flat';
+    const flatTitle = flat?.title || (lang === 'ru' ? 'Квартира' : 'Flat');
     const checklists = await db.getInspectionChecklists(tenancy.id);
     const hasMoveIn = checklists.some((checklist) => checklist.inspection_type === 'move_in');
     if (!hasMoveIn) {
       missingDocItems.push({
         flatTitle,
         tenantName: tenancy.tenant_name,
-        reason: 'Missing Move-In Checklist',
+        reason: lang === 'ru' ? 'Отсутствует Акт приема' : 'Missing Move-In Checklist',
       });
     }
   }
 
   // Construct Weekly Digest Text
-  let digestText = `📊 **WEEKLY SNAPSHOT DIGEST**\n\n`;
-  digestText += `🏡 Managed Flats: ${flats.length} (${activeTenanciesCount} Active, ${vacantFlatsCount} Vacant)\n`;
-  digestText += `💰 Monthly Revenue Collected: ${monthlyRevenue.toLocaleString('en-US')} RUB\n\n`;
-
-  // Overdue Section & Inline Buttons
-  digestText += `⚠️ **Overdue Rent Obligations** (${overduePayments.length}):\n`;
   const buttons: TelegramInlineButton[][] = [];
+  let digestText = '';
 
-  if (overduePayments.length > 0) {
-    for (const payment of overduePayments) {
-      const { tenantName, flatTitle } = resolvePaymentContext(payment, tenancies, flats);
-      digestText += `- ${tenantName} (${flatTitle}): ${payment.amount.toLocaleString('en-US')} RUB (Due ${payment.due_date})\n`;
+  if (lang === 'ru') {
+    digestText = `📊 <b>ЕЖЕНЕДЕЛЬНЫЙ ДАЙДЖЕСТ</b>\n\n`;
+    digestText += `🏡 Квартиры в управлении: ${flats.length} (${activeTenanciesCount} Сдано, ${vacantFlatsCount} Свободно)\n`;
+    digestText += `💰 Собрано за месяц: ${monthlyRevenue.toLocaleString('en-US')} руб.\n\n`;
 
-      buttons.push([
-        {
-          text: `📋 Draft Reminder (${flatTitle})`,
-          callback_data: `copy_reminder:${payment.id}:ru`,
-        },
-      ]);
+    digestText += `⚠️ <b>Просроченные платежи</b> (${overduePayments.length}):\n`;
+    if (overduePayments.length > 0) {
+      for (const payment of overduePayments) {
+        const { tenantName, flatTitle } = resolvePaymentContext(payment, tenancies, flats);
+        digestText += `- ${tenantName} (${flatTitle}): ${payment.amount.toLocaleString('en-US')} руб. (Срок ${payment.due_date})\n`;
+        buttons.push([
+          {
+            text: `📋 Шаблон напоминания (${flatTitle})`,
+            callback_data: `copy_reminder:${payment.id}:ru`,
+          },
+        ]);
+      }
+    } else {
+      digestText += `Задолженностей нет! 🎉\n`;
     }
-  } else {
-    digestText += `None - All clear! 🎉\n`;
-  }
-  digestText += `\n`;
+    digestText += `\n`;
 
-  // Upcoming Payments Section
-  digestText += `📅 **Upcoming Rent Due (Next 7 Days)** (${upcomingPayments.length}):\n`;
-  if (upcomingPayments.length > 0) {
-    for (const payment of upcomingPayments) {
-      const { tenantName, flatTitle } = resolvePaymentContext(payment, tenancies, flats);
-      digestText += `- ${tenantName} (${flatTitle}): ${payment.amount.toLocaleString('en-US')} RUB (Due ${payment.due_date})\n`;
+    digestText += `📅 <b>Предстоящие платежи (на 7 дней)</b> (${upcomingPayments.length}):\n`;
+    if (upcomingPayments.length > 0) {
+      for (const payment of upcomingPayments) {
+        const { tenantName, flatTitle } = resolvePaymentContext(payment, tenancies, flats);
+        digestText += `- ${tenantName} (${flatTitle}): ${payment.amount.toLocaleString('en-US')} руб. (Срок ${payment.due_date})\n`;
+      }
+    } else {
+      digestText += `Нет\n`;
     }
-  } else {
-    digestText += `None\n`;
-  }
-  digestText += `\n`;
+    digestText += `\n`;
 
-  // Upcoming Transitions Section
+    const totalTransitions = upcomingMoveIns.length + upcomingMoveOuts.length;
+    digestText += `🔑 <b>Предстоящие въезды / выезды (на 30 дней)</b> (${totalTransitions}):\n`;
+    if (totalTransitions > 0) {
+      for (const tenancy of upcomingMoveIns) {
+        const flat = flats.find((item) => item.id === tenancy.flat_id);
+        digestText += `- Въезд: ${tenancy.tenant_name} (${flat?.title || 'Квартира'}) — ${tenancy.start_date}\n`;
+      }
+      for (const tenancy of upcomingMoveOuts) {
+        const flat = flats.find((item) => item.id === tenancy.flat_id);
+        digestText += `- Выезд: ${tenancy.tenant_name} (${flat?.title || 'Квартира'}) — ${tenancy.end_date}\n`;
+      }
+    } else {
+      digestText += `Нет\n`;
+    }
+    digestText += `\n`;
+
+    digestText += `📋 <b>Недостающие акты и документы</b> (${missingDocItems.length}):\n`;
+    if (missingDocItems.length > 0) {
+      for (const item of missingDocItems) {
+        digestText += `- ${item.flatTitle} (${item.tenantName}): ${item.reason}\n`;
+      }
+    } else {
+      digestText += `Все документы в порядке! ✨\n`;
+    }
+    digestText += `\n✨ Успешной недели!`;
+  } else {
+    digestText = `📊 <b>WEEKLY SNAPSHOT DIGEST</b>\n\n`;
+    digestText += `🏡 Managed Flats: ${flats.length} (${activeTenanciesCount} Active, ${vacantFlatsCount} Vacant)\n`;
+    digestText += `💰 Monthly Revenue Collected: ${monthlyRevenue.toLocaleString('en-US')} RUB\n\n`;
+
+    digestText += `⚠️ <b>Overdue Rent Obligations</b> (${overduePayments.length}):\n`;
+    if (overduePayments.length > 0) {
+      for (const payment of overduePayments) {
+        const { tenantName, flatTitle } = resolvePaymentContext(payment, tenancies, flats);
+        digestText += `- ${tenantName} (${flatTitle}): ${payment.amount.toLocaleString('en-US')} RUB (Due ${payment.due_date})\n`;
+        buttons.push([
+          {
+            text: `📋 Draft Reminder (${flatTitle})`,
+            callback_data: `copy_reminder:${payment.id}:ru`,
+          },
+        ]);
+      }
+    } else {
+      digestText += `None - All clear! 🎉\n`;
+    }
+    digestText += `\n`;
+
+    digestText += `📅 <b>Upcoming Rent Due (Next 7 Days)</b> (${upcomingPayments.length}):\n`;
+    if (upcomingPayments.length > 0) {
+      for (const payment of upcomingPayments) {
+        const { tenantName, flatTitle } = resolvePaymentContext(payment, tenancies, flats);
+        digestText += `- ${tenantName} (${flatTitle}): ${payment.amount.toLocaleString('en-US')} RUB (Due ${payment.due_date})\n`;
+      }
+    } else {
+      digestText += `None\n`;
+    }
+    digestText += `\n`;
+
+    const totalTransitions = upcomingMoveIns.length + upcomingMoveOuts.length;
+    digestText += `🔑 <b>Upcoming Lease Transitions (Next 30 Days)</b> (${totalTransitions}):\n`;
+    if (totalTransitions > 0) {
+      for (const tenancy of upcomingMoveIns) {
+        const flat = flats.find((item) => item.id === tenancy.flat_id);
+        digestText += `- Move-in: ${tenancy.tenant_name} (${flat?.title || 'Flat'}) on ${tenancy.start_date}\n`;
+      }
+      for (const tenancy of upcomingMoveOuts) {
+        const flat = flats.find((item) => item.id === tenancy.flat_id);
+        digestText += `- Move-out: ${tenancy.tenant_name} (${flat?.title || 'Flat'}) on ${tenancy.end_date}\n`;
+      }
+    } else {
+      digestText += `None\n`;
+    }
+    digestText += `\n`;
+
+    digestText += `📋 <b>Missing Checklists & Docs</b> (${missingDocItems.length}):\n`;
+    if (missingDocItems.length > 0) {
+      for (const item of missingDocItems) {
+        digestText += `- ${item.flatTitle} (${item.tenantName}): ${item.reason}\n`;
+      }
+    } else {
+      digestText += `None - All documentation complete! ✨\n`;
+    }
+    digestText += `\n✨ Have a great week organizing your flats!`;
+  }
+
   const totalTransitions = upcomingMoveIns.length + upcomingMoveOuts.length;
-  digestText += `🔑 **Upcoming Lease Transitions (Next 30 Days)** (${totalTransitions}):\n`;
-  if (totalTransitions > 0) {
-    for (const tenancy of upcomingMoveIns) {
-      const flat = flats.find((item) => item.id === tenancy.flat_id);
-      digestText += `- Move-in: ${tenancy.tenant_name} (${flat?.title || 'Flat'}) on ${tenancy.start_date}\n`;
-    }
-    for (const tenancy of upcomingMoveOuts) {
-      const flat = flats.find((item) => item.id === tenancy.flat_id);
-      digestText += `- Move-out: ${tenancy.tenant_name} (${flat?.title || 'Flat'}) on ${tenancy.end_date}\n`;
-    }
-  } else {
-    digestText += `None\n`;
-  }
-  digestText += `\n`;
-
-  // Missing Checklists / Docs Section
-  digestText += `📋 **Missing Checklists & Docs** (${missingDocItems.length}):\n`;
-  if (missingDocItems.length > 0) {
-    for (const item of missingDocItems) {
-      digestText += `- ${item.flatTitle} (${item.tenantName}): ${item.reason}\n`;
-    }
-  } else {
-    digestText += `None - All documentation complete! ✨\n`;
-  }
-  digestText += `\n✨ Have a great week organizing your flats!`;
 
   return {
     digestText,
@@ -197,9 +258,13 @@ export async function compileWeeklyDigest(referenceDate: Date = new Date()): Pro
   };
 }
 
-export async function sendWeeklyDigest(targetChatId?: string | number): Promise<WeeklyDigestResult> {
-  const digest = await compileWeeklyDigest();
+export async function sendWeeklyDigest(
+  targetChatId?: string | number,
+  userLang?: 'ru' | 'en'
+): Promise<WeeklyDigestResult> {
   const recipientChatId = targetChatId || getPrimaryRecipientChatId();
+  const lang = userLang || (recipientChatId ? await db.getUserLanguage(recipientChatId) : 'en');
+  const digest = await compileWeeklyDigest(new Date(), lang);
 
   if (recipientChatId) {
     await sendTelegramMessage(

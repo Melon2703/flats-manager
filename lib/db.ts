@@ -17,6 +17,7 @@ let memoryExpectedPayments: ExpectedPayment[] = [];
 let memoryPaymentRecords: PaymentRecord[] = [];
 let memoryTimelineEvents: TimelineEvent[] = [];
 let memoryInspectionChecklists: InspectionChecklist[] = [];
+let memoryUserSettings: Record<string, 'ru' | 'en'> = {};
 
 export const db = {
   async reset() {
@@ -26,6 +27,7 @@ export const db = {
     memoryPaymentRecords = [];
     memoryTimelineEvents = [];
     memoryInspectionChecklists = [];
+    memoryUserSettings = {};
   },
 
   // FLATS
@@ -355,11 +357,21 @@ export const db = {
 
     const activeTenancy = tenancies.find((t) => t.status === 'active') || tenancies[0];
     const payments = await this.getExpectedPayments(activeTenancy.id);
-    const targetPayment = payments.find(
-      (p) => p.status === 'Overdue' || p.status === 'Pending' || p.status === 'Due Today'
-    );
 
-    if (!targetPayment) return null;
+    const unpaid = payments.filter(
+      (p) => p.status === 'Overdue' || p.status === 'Due Today' || p.status === 'Pending'
+    );
+    if (unpaid.length === 0) return null;
+
+    const statusPriority: Record<string, number> = { Overdue: 0, 'Due Today': 1, Pending: 2 };
+    unpaid.sort((a, b) => {
+      const prioA = statusPriority[a.status] ?? 3;
+      const prioB = statusPriority[b.status] ?? 3;
+      if (prioA !== prioB) return prioA - prioB;
+      return a.due_date.localeCompare(b.due_date);
+    });
+
+    const targetPayment = unpaid[0];
 
     return await this.createPaymentRecord({
       expected_payment_id: targetPayment.id,
@@ -443,6 +455,29 @@ export const db = {
       (i) => i.tenancy_id === tenancyId && i.inspection_type === type
     );
     return checklists[0] || null;
+  },
+
+  // USER SETTINGS / LANGUAGE
+  async getUserLanguage(userId?: string | number): Promise<'ru' | 'en'> {
+    if (!userId) return 'en';
+    const key = String(userId);
+    if (supabaseClient) {
+      const { data } = await supabaseClient.from('user_settings').select('language').eq('user_id', key).single();
+      if (data?.language && (data.language === 'ru' || data.language === 'en')) {
+        return data.language;
+      }
+    }
+    return memoryUserSettings[key] || 'en';
+  },
+
+  async setUserLanguage(userId: string | number, lang: 'ru' | 'en'): Promise<void> {
+    const key = String(userId);
+    memoryUserSettings[key] = lang;
+    if (supabaseClient) {
+      await supabaseClient
+        .from('user_settings')
+        .upsert({ user_id: key, language: lang, updated_at: new Date().toISOString() });
+    }
   },
 };
 

@@ -169,6 +169,33 @@ export const translations = {
     summarySheetPreview: 'Предпросмотр акта расчета для арендатора',
     copySummarySheet: '📋 Скопировать расчет для арендатора',
     summaryCopied: 'Расчет скопирован в буфер обмена!',
+
+    // Telegram Bot UI
+    botMenuTitle: '🏡 <b>Цифровой бэк-офис аренды (Anya\'s Mom)</b>',
+    botMenuDesc: 'Управляйте квартирами, договорами аренды, платежами, чеками и актами прямо в Telegram!\n\n' +
+      '<b>Доступные команды и действия:</b>\n' +
+      '📱 <b>Веб-приложение:</b> Нажмите кнопку ниже для открытия полной панели управления.\n' +
+      '🔔 <b>Платежи (/reminders):</b> Просмотр задолженностей и генерация шаблонов напоминаний арендаторам.\n' +
+      '📊 <b>Еженедельный отчет (/digest):</b> Сводка доходов, свободных квартир и недостающих актов.\n' +
+      '🌐 <b>Язык (/lang):</b> Смена языка интерфейса (RU / EN).\n\n' +
+      '<b>Фиксация медиа и заметок:</b>\n' +
+      '📥 <b>Пересылайте сообщения:</b> Перешлите подтверждение платежа для привязки к квартире.\n' +
+      '📷 <b>Чеки и фото:</b> Отправляйте фото банковских чеков или показаний счетчиков.\n' +
+      '🎙 <b>Голосовые заметки:</b> Запишите голосовое сообщение для расшифровки и записи в историю квартиры.',
+    botOpenWebApp: '📱 Открыть веб-приложение',
+    botCheckDueRent: '🔔 Проверить оплату',
+    botWeeklyDigest: '📊 Еженедельный отчет',
+    botChangeLanguage: '🌐 Сменить язык',
+    botSelectLanguagePrompt: '🌐 <b>Выберите язык интерфейса Telegram-бота:</b>',
+    botLangChangedRu: '🇷🇺 Язык интерфейса изменен на Русский.',
+    botLangChangedEn: '🇬🇧 Interface language changed to English.',
+    botNoDuePayments: '🎉 Отлично! Сейчас нет просроченных или ожидающих платежей.',
+    botMediaAssigned: '✅ Медиа привязано к <b>{flat}</b> как <b>{category}</b>.',
+    botPaymentRecorded: '✅ Платеж на сумму {amount} руб. отмечен как ОПЛАЧЕН.',
+    catRentReceipt: '💳 Чек аренды',
+    catExpense: '💸 Расход',
+    catUtility: '⚡ Коммуналка',
+    catNote: '📝 Заметка',
   },
   en: {
     // Common & Header & Nav
@@ -338,6 +365,33 @@ export const translations = {
     summarySheetPreview: 'Itemized Summary Sheet Preview',
     copySummarySheet: '📋 Copy Summary Sheet for Tenant',
     summaryCopied: 'Move-Out Settlement Summary sheet copied to clipboard!',
+
+    // Telegram Bot UI
+    botMenuTitle: '🏡 <b>Anya\'s Mom Rental Back Office</b>',
+    botMenuDesc: 'Manage flats, tenancies, expected payments, payment receipts, and inspection settlements right here in Telegram!\n\n' +
+      '<b>Available Commands & Actions:</b>\n' +
+      '📱 <b>Web App:</b> Tap the button below to open the full dashboard.\n' +
+      '🔔 <b>Due Payments (/reminders):</b> View overdue rent and generate polite copy-paste reminder messages.\n' +
+      '📊 <b>Weekly Snapshot (/digest):</b> View revenue summary, active/vacant flats, and missing checklists.\n' +
+      '🌐 <b>Language (/lang):</b> Change interface language (RU / EN).\n\n' +
+      '<b>How to capture media & notes:</b>\n' +
+      '📥 <b>Forward Messages:</b> Forward payment confirmation text or chat messages to assign to a flat.\n' +
+      '📷 <b>Photos & Receipts:</b> Send photos of bank transfer receipts or meter readings.\n' +
+      '🎙 <b>Voice Notes:</b> Record a voice note to transcribe and store key updates on flat timelines.',
+    botOpenWebApp: '📱 Open Web App',
+    botCheckDueRent: '🔔 Check Due Rent',
+    botWeeklyDigest: '📊 Weekly Digest',
+    botChangeLanguage: '🌐 Change Language',
+    botSelectLanguagePrompt: '🌐 <b>Select Telegram bot interface language:</b>',
+    botLangChangedRu: '🇷🇺 Interface language changed to Russian.',
+    botLangChangedEn: '🇬🇧 Interface language changed to English.',
+    botNoDuePayments: '🎉 All clear! No due or overdue rent payments right now.',
+    botMediaAssigned: '✅ Media assigned to <b>{flat}</b> as <b>{category}</b>.',
+    botPaymentRecorded: '✅ Payment of {amount} RUB recorded as PAID.',
+    catRentReceipt: '💳 Rent Receipt',
+    catExpense: '💸 Expense',
+    catUtility: '⚡ Utility',
+    catNote: '📝 Note',
   },
 };
 
