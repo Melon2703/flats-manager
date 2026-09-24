@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { authenticateTWA } from '@/lib/auth';
+import { updateSession } from '@/utils/supabase/middleware';
 
 export async function middleware(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith('/api/twa')) {
@@ -7,9 +8,12 @@ export async function middleware(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
   }
-  return NextResponse.next();
+  return await updateSession(req);
 }
 
 export const config = {
-  matcher: '/api/twa/:path*',
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };
+
