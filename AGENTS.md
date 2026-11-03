@@ -1,0 +1,13 @@
+## Agent skills
+
+### Issue tracker
+
+Before reading or publishing specs, tickets, or issue updates, read `docs/agents/issue-tracker.md`. This project uses GitHub Issues in `Melon2703/flats-manager`.
+
+### Triage labels
+
+Before triaging or labeling issues, read `docs/agents/triage-labels.md`. This project uses the five default triage labels.
+
+### Domain docs
+
+Before exploring or designing a feature, read `docs/agents/domain.md`. This project uses a single-context glossary and ADR layout.
