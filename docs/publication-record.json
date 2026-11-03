@@ -1,0 +1,80 @@
+{
+  "repository": "Melon2703/flats-manager",
+  "implementation_authorized": false,
+  "issues": [
+    {
+      "source": "specification",
+      "title": "Rental Manager — monthly financial workflow prototype",
+      "number": 1,
+      "url": "https://github.com/Melon2703/flats-manager/issues/1",
+      "parent": null,
+      "blocked_by": []
+    },
+    {
+      "source": "ticket-01",
+      "title": "Record rent and see monthly debt",
+      "number": 2,
+      "url": "https://github.com/Melon2703/flats-manager/issues/2",
+      "parent": 1,
+      "blocked_by": []
+    },
+    {
+      "source": "ticket-02",
+      "title": "Record expenses and see family shares",
+      "number": 3,
+      "url": "https://github.com/Melon2703/flats-manager/issues/3",
+      "parent": 1,
+      "blocked_by": [
+        2
+      ]
+    },
+    {
+      "source": "ticket-03",
+      "title": "Handle monthly rent exceptions",
+      "number": 4,
+      "url": "https://github.com/Melon2703/flats-manager/issues/4",
+      "parent": 1,
+      "blocked_by": [
+        2
+      ]
+    },
+    {
+      "source": "ticket-04",
+      "title": "Record late receipts and known-month advances",
+      "number": 5,
+      "url": "https://github.com/Melon2703/flats-manager/issues/5",
+      "parent": 1,
+      "blocked_by": [
+        2
+      ]
+    },
+    {
+      "source": "ticket-05",
+      "title": "Correct financial entries with history",
+      "number": 6,
+      "url": "https://github.com/Melon2703/flats-manager/issues/6",
+      "parent": 1,
+      "blocked_by": [
+        3,
+        5
+      ]
+    },
+    {
+      "source": "ticket-06",
+      "title": "Validate the complete mobile workflow",
+      "number": 7,
+      "url": "https://github.com/Melon2703/flats-manager/issues/7",
+      "parent": 1,
+      "blocked_by": [
+        4,
+        6
+      ]
+    }
+  ],
+  "publication_complete": true,
+  "verification": {
+    "bodies_labels_and_native_relationships": "passed",
+    "issue_count": 7,
+    "source_spec_and_six_drafts": "unchanged byte-for-byte"
+  }
+}

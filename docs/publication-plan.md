@@ -1,11 +1,11 @@
 # GitHub publication plan
 
-Status: awaiting approval. No specification or ticket issues have been published. Implementation is not authorized.
+Status: approved and published. The specification is GitHub issue #1 and the six tickets are #2–#7. Implementation is not authorized. Verified issue URLs and dependencies are recorded separately in `publication-record.json`.
 
 ## Verified state
 
 - GitHub Issues is enabled in `Melon2703/flats-manager`.
-- The open-and-closed issue list is empty at preparation time. Recheck immediately before publication.
+- The open-and-closed issue list was empty at preparation and was rechecked before publication. Seven issues were created without duplicating existing work.
 - Setup uses `AGENTS.md`, GitHub tracker conventions, the five default triage labels, and single-context domain documentation. All five labels exist; the original `wontfix` label was reused.
 - The existing specification and six ticket drafts are preserved byte-for-byte. This plan does not regenerate or expand their requirements.
 
@@ -39,3 +39,4 @@ The dependency graph is acyclic. Drafts 02, 03, and 04 can proceed independently
 - Unknown advance/deposit arrangements, allocation remainders, negative family shares, and exceptional allocation rules remain unresolved; publication does not validate them.
 - Trial data is synthetic. Operational privacy, authentication, recovery, complete rental arrangements, and owner validation are still prerequisites to real use.
 - Draft 06 requires owner participation; automated checks cannot substitute for observing independent use.
+- The founder subsequently selected Next.js and Vercel. The published specification and first ticket reflect that addition; the preserved local drafts remain unchanged. Stack details and implementation defaults are documented in `tech-stack.md`.
