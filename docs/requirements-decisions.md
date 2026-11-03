@@ -17,6 +17,7 @@ The Product Brief is starting context, not a finalized specification. User-repor
 
 ## Founder decisions
 
+- The interface must support both Russian and English, with an accessible language switch and a remembered browser preference. Russian remains the initial default. This supersedes Russian-only interface wording in the original brief, specification, and six preserved drafts; it applies to all subsequent feature screens. User-entered text and financial facts are not translated or changed by switching languages.
 - Primary priority: financial information must be easy to understand and enter, with every record linked to a specific month. Allocation is secondary; detailed allocation edge cases must not drive the initial scope or interview.
 - Primary screen: a selected-month overview of all apartments, showing expected rent, receipts, expenses, and remaining tenant debt per apartment. Receipt and expense entry starts from the apartment row with apartment and month preselected. Family allocation is available within the apartment's monthly details.
 - Initial use starts with current rental terms, the current month's receipts and expenses, and any older unpaid rent linked to its original month. Copying closed historical months from the notebook is not required. This startup scope was approved by the founder; the owner's ability to switch with this data remains to be validated.

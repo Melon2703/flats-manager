@@ -16,7 +16,9 @@
       "number": 2,
       "url": "https://github.com/Melon2703/flats-manager/issues/2",
       "parent": 1,
-      "blocked_by": []
+      "blocked_by": [
+        8
+      ]
     },
     {
       "source": "ticket-02",
@@ -69,12 +71,24 @@
         4,
         6
       ]
+    },
+    {
+      "source": "ticket-00",
+      "title": "Initialize the Next.js application foundation",
+      "number": 8,
+      "url": "https://github.com/Melon2703/flats-manager/issues/8",
+      "parent": 1,
+      "blocked_by": [],
+      "blocks": [
+        2
+      ]
     }
   ],
   "publication_complete": true,
   "verification": {
-    "bodies_labels_and_native_relationships": "passed",
-    "issue_count": 7,
-    "source_spec_and_six_drafts": "unchanged byte-for-byte"
+    "bodies_labels_and_native_relationships": "original publication verified; foundation body, label, parent and new blocking edge verified",
+    "issue_count": 8,
+    "source_spec_and_ticket_drafts": "unchanged byte-for-byte",
+    "existing_remote_issue_titles_and_bodies": "unchanged"
   }
 }
