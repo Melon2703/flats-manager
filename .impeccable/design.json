@@ -1,0 +1,336 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-04T05:46:40.908476+00:00",
+  "title": "Design System: Rental Manager",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Ground",
+        "tonalRamp": [
+          "oklch(0.150 0.0009 264.54)",
+          "oklch(0.260 0.0017 264.54)",
+          "oklch(0.380 0.0024 264.54)",
+          "oklch(0.490 0.0029 264.54)",
+          "oklch(0.610 0.0029 264.54)",
+          "oklch(0.720 0.0024 264.54)",
+          "oklch(0.840 0.0017 264.54)",
+          "oklch(0.950 0.0006 264.54)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "tonalRamp": [
+          "oklch(0.150 0.0000 89.88)",
+          "oklch(0.260 0.0000 89.88)",
+          "oklch(0.380 0.0000 89.88)",
+          "oklch(0.490 0.0000 89.88)",
+          "oklch(0.610 0.0000 89.88)",
+          "oklch(0.720 0.0000 89.88)",
+          "oklch(0.840 0.0000 89.88)",
+          "oklch(0.950 0.0000 89.88)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "tonalRamp": [
+          "oklch(0.150 0.0116 264.35)",
+          "oklch(0.260 0.0233 264.35)",
+          "oklch(0.380 0.0330 264.35)",
+          "oklch(0.490 0.0388 264.35)",
+          "oklch(0.610 0.0388 264.35)",
+          "oklch(0.720 0.0330 264.35)",
+          "oklch(0.840 0.0233 264.35)",
+          "oklch(0.950 0.0078 264.35)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "tonalRamp": [
+          "oklch(0.150 0.0107 254.48)",
+          "oklch(0.260 0.0215 254.48)",
+          "oklch(0.380 0.0304 254.48)",
+          "oklch(0.490 0.0358 254.48)",
+          "oklch(0.610 0.0358 254.48)",
+          "oklch(0.720 0.0304 254.48)",
+          "oklch(0.840 0.0215 254.48)",
+          "oklch(0.950 0.0072 254.48)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "tonalRamp": [
+          "oklch(0.150 0.0042 247.99)",
+          "oklch(0.260 0.0084 247.99)",
+          "oklch(0.380 0.0119 247.99)",
+          "oklch(0.490 0.0140 247.99)",
+          "oklch(0.610 0.0140 247.99)",
+          "oklch(0.720 0.0119 247.99)",
+          "oklch(0.840 0.0084 247.99)",
+          "oklch(0.950 0.0028 247.99)"
+        ]
+      },
+      "teal": {
+        "role": "primary",
+        "displayName": "Teal",
+        "tonalRamp": [
+          "oklch(0.150 0.0135 188.22)",
+          "oklch(0.260 0.0270 188.22)",
+          "oklch(0.380 0.0382 188.22)",
+          "oklch(0.490 0.0450 188.22)",
+          "oklch(0.610 0.0450 188.22)",
+          "oklch(0.720 0.0382 188.22)",
+          "oklch(0.840 0.0270 188.22)",
+          "oklch(0.950 0.0090 188.22)"
+        ]
+      },
+      "teal-hover": {
+        "role": "primary",
+        "displayName": "Teal Hover",
+        "tonalRamp": [
+          "oklch(0.150 0.0135 188.23)",
+          "oklch(0.260 0.0270 188.23)",
+          "oklch(0.380 0.0382 188.23)",
+          "oklch(0.490 0.0450 188.23)",
+          "oklch(0.610 0.0450 188.23)",
+          "oklch(0.720 0.0382 188.23)",
+          "oklch(0.840 0.0270 188.23)",
+          "oklch(0.950 0.0090 188.23)"
+        ]
+      },
+      "teal-wash": {
+        "role": "primary",
+        "displayName": "Teal Wash",
+        "tonalRamp": [
+          "oklch(0.150 0.0026 188.11)",
+          "oklch(0.260 0.0052 188.11)",
+          "oklch(0.380 0.0073 188.11)",
+          "oklch(0.490 0.0086 188.11)",
+          "oklch(0.610 0.0086 188.11)",
+          "oklch(0.720 0.0073 188.11)",
+          "oklch(0.840 0.0052 188.11)",
+          "oklch(0.950 0.0017 188.11)"
+        ]
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Danger",
+        "tonalRamp": [
+          "oklch(0.150 0.0135 28.51)",
+          "oklch(0.260 0.0270 28.51)",
+          "oklch(0.380 0.0382 28.51)",
+          "oklch(0.490 0.0450 28.51)",
+          "oklch(0.610 0.0450 28.51)",
+          "oklch(0.720 0.0382 28.51)",
+          "oklch(0.840 0.0270 28.51)",
+          "oklch(0.950 0.0090 28.51)"
+        ]
+      },
+      "field-border": {
+        "role": "neutral",
+        "displayName": "Field Border",
+        "tonalRamp": [
+          "oklch(0.150 0.0094 249.90)",
+          "oklch(0.260 0.0187 249.90)",
+          "oklch(0.380 0.0265 249.90)",
+          "oklch(0.490 0.0312 249.90)",
+          "oklch(0.610 0.0312 249.90)",
+          "oklch(0.720 0.0265 249.90)",
+          "oklch(0.840 0.0187 249.90)",
+          "oklch(0.950 0.0062 249.90)"
+        ]
+      },
+      "secondary-border": {
+        "role": "neutral",
+        "displayName": "Secondary Border",
+        "tonalRamp": [
+          "oklch(0.150 0.0078 242.48)",
+          "oklch(0.260 0.0156 242.48)",
+          "oklch(0.380 0.0222 242.48)",
+          "oklch(0.490 0.0261 242.48)",
+          "oklch(0.610 0.0261 242.48)",
+          "oklch(0.720 0.0222 242.48)",
+          "oklch(0.840 0.0156 242.48)",
+          "oklch(0.950 0.0052 242.48)"
+        ]
+      },
+      "selection": {
+        "role": "neutral",
+        "displayName": "Selection",
+        "tonalRamp": [
+          "oklch(0.150 0.0097 184.48)",
+          "oklch(0.260 0.0194 184.48)",
+          "oklch(0.380 0.0275 184.48)",
+          "oklch(0.490 0.0323 184.48)",
+          "oklch(0.610 0.0323 184.48)",
+          "oklch(0.720 0.0275 184.48)",
+          "oklch(0.840 0.0194 184.48)",
+          "oklch(0.950 0.0065 184.48)"
+        ]
+      },
+      "loading": {
+        "role": "neutral",
+        "displayName": "Loading",
+        "tonalRamp": [
+          "oklch(0.150 0.0023 241.67)",
+          "oklch(0.260 0.0046 241.67)",
+          "oklch(0.380 0.0065 241.67)",
+          "oklch(0.490 0.0076 241.67)",
+          "oklch(0.610 0.0076 241.67)",
+          "oklch(0.720 0.0065 241.67)",
+          "oklch(0.840 0.0046 241.67)",
+          "oklch(0.950 0.0015 241.67)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Selected month and access heading."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Apartment identity."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Content, controls, and financial figures."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels and supporting information."
+      }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": [
+      {
+        "name": "narrow-phone-max",
+        "value": "359px"
+      },
+      {
+        "name": "small-phone-max",
+        "value": "420px"
+      },
+      {
+        "name": "mobile-ledger-max",
+        "value": "899px"
+      },
+      {
+        "name": "desktop-ledger-min",
+        "value": "900px"
+      }
+    ],
+    "focus": {
+      "value": "2px solid var(--teal)",
+      "offset": "4px"
+    },
+    "disabledOpacity": 0.55,
+    "tonalRampNote": "Synthesized OKLCH preview ramps; not application tokens or approved alternate colors."
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Shared action styling; disabled while saving when applicable.",
+      "html": "<button class=\"ds-button-primary\">Record receipt</button>",
+      "css": ".ds-button-primary{font-family:-apple-system, BlinkMacSystemFont, \"Segoe UI\", Arial, sans-serif;font-size:1rem;line-height:1.5;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 16px;font-weight:600;border:1px solid transparent;border-radius:var(--radius,8px);cursor:pointer;background:var(--teal,#115e59);color:var(--surface,#ffffff);}.ds-button-primary:hover:not(:disabled){background:var(--teal-hover,#0c4945);}.ds-button-primary:focus-visible{outline:2px solid var(--teal,#115e59);outline-offset:4px;}.ds-button-primary:disabled{opacity:.55;cursor:default;}"
+    },
+    {
+      "name": "Secondary button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Shared action styling; disabled while saving when applicable.",
+      "html": "<button class=\"ds-button-secondary\">Record receipt</button>",
+      "css": ".ds-button-secondary{font-family:-apple-system, BlinkMacSystemFont, \"Segoe UI\", Arial, sans-serif;font-size:1rem;line-height:1.5;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 16px;font-weight:600;border:1px solid transparent;border-radius:var(--radius,8px);cursor:pointer;background:transparent;color:var(--teal,#115e59);border-color:#9aaab7;}.ds-button-secondary:hover:not(:disabled){background:var(--teal-wash,#eaf2f1);}.ds-button-secondary:focus-visible{outline:2px solid var(--teal,#115e59);outline-offset:4px;}.ds-button-secondary:disabled{opacity:.55;cursor:default;}"
+    },
+    {
+      "name": "Text button",
+      "kind": "button",
+      "refersTo": "button-text",
+      "description": "Shared action styling; disabled while saving when applicable.",
+      "html": "<button class=\"ds-button-text\">Record receipt</button>",
+      "css": ".ds-button-text{font-family:-apple-system, BlinkMacSystemFont, \"Segoe UI\", Arial, sans-serif;font-size:1rem;line-height:1.5;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 16px;font-weight:600;border:1px solid transparent;border-radius:var(--radius,8px);cursor:pointer;background:transparent;color:var(--teal,#115e59);padding-inline:8px;}.ds-button-text:hover:not(:disabled){background:var(--teal-wash,#eaf2f1);}.ds-button-text:focus-visible{outline:2px solid var(--teal,#115e59);outline-offset:4px;}.ds-button-text:disabled{opacity:.55;cursor:default;}"
+    },
+    {
+      "name": "Labeled field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Visible label and white field with a strong keyboard focus outline.",
+      "html": "<label class=\"ds-field\">Amount received<input class=\"ds-input\" inputmode=\"decimal\" value=\"600.00\"></label>",
+      "css": ".ds-field{font-family:-apple-system, BlinkMacSystemFont, \"Segoe UI\", Arial, sans-serif;font-size:1rem;line-height:1.5;display:grid;gap:8px;font-size:.875rem;font-weight:600;color:var(--ink,#172033);}.ds-input{font-family:-apple-system, BlinkMacSystemFont, \"Segoe UI\", Arial, sans-serif;font-size:1rem;line-height:1.5;width:100%;min-width:0;min-height:48px;padding:10px 12px;border:1px solid #8797a8;border-radius:var(--radius,8px);background:var(--surface,#ffffff);color:var(--ink,#172033);caret-color:var(--teal,#115e59);}.ds-input:focus-visible{outline:2px solid var(--teal,#115e59);outline-offset:4px;}"
+    },
+    {
+      "name": "Language navigation",
+      "kind": "nav",
+      "description": "Visible wrapping language selection with an explicit pressed state.",
+      "html": "<nav class=\"ds-languages\" aria-label=\"Language\"><button aria-pressed=\"true\">Русский</button><button aria-pressed=\"false\">English</button></nav>",
+      "css": ".ds-languages{display:flex;gap:4px;align-items:center;flex-wrap:wrap;}.ds-languages button{font-family:-apple-system, BlinkMacSystemFont, \"Segoe UI\", Arial, sans-serif;font-size:1rem;line-height:1.5;min-height:44px;padding:8px 12px;border:0;border-radius:var(--radius,8px);background:transparent;color:var(--muted,#526174);font-size:.875rem;cursor:pointer;}.ds-languages button[aria-pressed=\"true\"]{color:var(--teal,#115e59);background:var(--teal-wash,#eaf2f1);font-weight:650;}.ds-languages button:focus-visible{outline:2px solid var(--teal,#115e59);outline-offset:4px;}"
+    },
+    {
+      "name": "Inline entry surface",
+      "kind": "card",
+      "refersTo": "entry-form",
+      "description": "White inset surface for apartment and receipt entry, without shadow.",
+      "html": "<section class=\"ds-entry\"><h3>Record receipt</h3><p>Park apartment · November 2026</p></section>",
+      "css": ".ds-entry{font-family:-apple-system, BlinkMacSystemFont, \"Segoe UI\", Arial, sans-serif;font-size:1rem;line-height:1.5;display:grid;gap:20px;padding:24px;background:var(--surface,#ffffff);color:var(--ink,#172033);border-radius:var(--radius,8px);max-width:680px;}.ds-entry h3{margin:0;font-size:1rem;font-weight:650;}.ds-entry p{margin:0;color:var(--muted,#526174);font-size:.875rem;}@media(max-width:420px){.ds-entry{padding:20px 16px;}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "A quiet monthly rent ledger",
+    "overview": "A quiet monthly rent ledger: familiar apartment names, aligned amounts, and receipt entry beside the record it changes. The approved direction extends the existing pale ground, dark text, and deep teal accent with generous internal spacing and fine separators.\n\nSystem typography supports Russian and English. Financial meaning supplies the hierarchy: outstanding rent is bold, supporting labels remain readable, and status includes words as well as color.",
+    "keyCharacteristics": [
+      "One continuous ledger with fine separators.",
+      "Deep teal actions and restrained brick-red overdue text.",
+      "Inline entry, tabular amounts, and wrapping bilingual controls."
+    ],
+    "rules": [],
+    "dos": [
+      "Do keep outstanding rent bold and amounts tabular.",
+      "Do retain explicit status text and visible keyboard focus.",
+      "Do let translated controls and apartment names wrap.",
+      "Do keep receipt entry beside its apartment and preserve the selected rental month context."
+    ],
+    "donts": [
+      "Don't replace the continuous ledger with decorative metric cards or chart-led hierarchy.",
+      "Don't use color as the only payment or overdue indicator.",
+      "Don't truncate translated controls or force three amount columns when they no longer fit."
+    ]
+  },
+  "source": {
+    "mode": "scan",
+    "files": [
+      {
+        "path": "src/app/globals.css",
+        "sha256": "54d788570b7583e16969c8237429f38398ba31f8415772ea55e76926d962184f"
+      },
+      {
+        "path": "src/components/monthly-ledger.tsx",
+        "sha256": "5812dc99a0610a33b7593cb0ebb7ff08702fa9719d57b7035f0f24b587241055"
+      },
+      {
+        "path": "src/components/receipt-form.tsx",
+        "sha256": "c46e0591c49568966156d1f8d908371330d7e13b53ac1d60359dfcda3caf8124"
+      },
+      {
+        "path": "src/components/sign-in.tsx",
+        "sha256": "956aaae0f24844d3b252dd64a4a97b3da5cf4408b7fe8a55af111d82c270c64b"
+      },
+      {
+        "path": "src/components/sign-out.tsx",
+        "sha256": "ddb23af69d44aaf90581d923bbb37bef4a1cc2dfef45843fc494799c71d2e70a"
+      }
+    ],
+    "designDocument": {
+      "path": "DESIGN.md",
+      "sha256": "1e7d0633473439d144e8299364464e85fe464b8e6324e3adbd475e0c446c136f"
+    },
+    "staleCheck": "Compare SHA-256 of each source file and DESIGN.md against these values. A missing file or different digest means this extraction needs review; regenerate both artifacts after accepted visual changes.",
+    "reviewScope": "Documentation follows SHIP disposition scoped to 18 inspected states; no owner trial or future feature coverage is claimed."
+  }
+}

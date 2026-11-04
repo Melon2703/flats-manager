@@ -1,4 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
+import { existsSync } from "node:fs";
+
+if (existsSync(".env.test.local")) process.loadEnvFile(".env.test.local");
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -12,6 +15,13 @@ export default defineConfig({
   },
   projects: [
     { name: "mobile-chromium", use: { ...devices["Pixel 7"] } },
+    {
+      name: "desktop-chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 1000 },
+      },
+    },
   ],
   webServer: {
     command: "npm run start -- --port 3100",

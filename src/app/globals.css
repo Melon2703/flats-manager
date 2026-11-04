@@ -1,9 +1,453 @@
 @import "tailwindcss" source(none);
 @source "../";
 
+:root {
+  --ground: #f6f7f9;
+  --surface: #ffffff;
+  --ink: #172033;
+  --muted: #526174;
+  --rule: #d3dbe3;
+  --teal: #115e59;
+  --teal-hover: #0c4945;
+  --teal-wash: #eaf2f1;
+  --danger: #a33128;
+  --radius: 8px;
+}
+* {
+  box-sizing: border-box;
+}
 body {
   margin: 0;
-  background: #f6f7f9;
-  color: #172033;
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+::selection {
+  background: #c5e3de;
+  color: var(--ink);
+}
+button,
+input,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+  min-height: 44px;
+}
+button,
+input,
+textarea {
+  border-radius: var(--radius);
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 4px;
+}
+input,
+textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #8797a8;
+  background: var(--surface);
+  color: var(--ink);
+  caret-color: var(--teal);
+}
+textarea {
+  resize: vertical;
+}
+input::placeholder {
+  color: var(--muted);
+}
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  gap: 20px;
+}
+label {
+  display: grid;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+h1,
+h2,
+h3,
+p,
+dl,
+dd {
+  margin: 0;
+}
+h1 {
+  font-size: 1.125rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+h2 {
+  font-size: 1.75rem;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+h3 {
+  font-size: 1.125rem;
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.muted,
+dt {
+  color: var(--muted);
+}
+.error {
+  color: var(--danger);
+  font-size: 0.9375rem;
+}
+.primary,
+.secondary,
+.text-button,
+.icon-button,
+.month-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  line-height: 1.5;
+}
+.primary {
+  background: var(--teal);
+  color: white;
+}
+.primary:hover:not(:disabled) {
+  background: var(--teal-hover);
+}
+.secondary {
+  border-color: #9aaab7;
+  background: transparent;
+  color: var(--teal);
+}
+.secondary:hover:not(:disabled),
+.text-button:hover:not(:disabled),
+.icon-button:hover:not(:disabled) {
+  background: var(--teal-wash);
+}
+.text-button {
+  background: transparent;
+  color: var(--teal);
+  padding-inline: 8px;
+}
+.icon-button {
+  width: 44px;
+  flex: 0 0 44px;
+  padding: 10px;
+  background: transparent;
+  color: var(--ink);
+}
+.app-shell {
+  max-width: 1120px;
+  padding: 0 24px 64px;
+  margin: 0 auto;
+}
+.app-header {
+  padding: 24px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  border-bottom: 1px solid var(--rule);
+}
+.header-actions,
+.language-switch {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.language-switch button {
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.language-switch button[aria-pressed="true"] {
+  color: var(--teal);
+  background: var(--teal-wash);
+  font-weight: 650;
+}
+.access-panel {
+  max-width: 420px;
+  margin: 64px auto;
+}
+.access-panel > p {
+  margin-top: 16px;
+}
+.access-panel .entry-form {
+  padding-inline: 0;
+  margin-top: 32px;
+}
+.month-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 28px 0 20px;
+  background: var(--ground);
+  border-bottom: 1px solid var(--rule);
+}
+.month-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  max-width: 440px;
+}
+.month-controls h2 {
+  min-width: 0;
+}
+.month-title {
+  color: var(--ink);
+  background: transparent;
+  padding: 6px;
+  font: inherit;
+  text-transform: capitalize;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.month-title:hover {
+  background: var(--teal-wash);
+}
+.month-context {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.month-picker {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+.apartment {
+  display: grid;
+  gap: 20px;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.status {
+  margin-top: 6px;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.status.overdue {
+  color: var(--danger);
+  font-weight: 600;
+}
+.status.paid {
+  color: var(--teal);
+}
+.due-date {
+  font-size: 0.875rem;
+  margin-top: 4px;
+}
+.amounts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr));
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.amounts dt {
+  font-size: 0.875rem;
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+.amounts dd {
+  font-size: 1rem;
+  white-space: nowrap;
+}
+.amounts .outstanding dd {
+  font-weight: 700;
+}
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.entry-form {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+.form-columns {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+}
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.help {
+  font-size: 0.875rem;
+}
+.add-section {
+  padding-top: 28px;
+}
+.apartment-form {
+  max-width: 560px;
+}
+.empty-state {
+  max-width: 480px;
+  padding: 40px 0 4px;
+}
+.empty-state p {
+  margin-top: 12px;
+  color: var(--muted);
+}
+.loading-rows {
+  padding-top: 28px;
+  color: var(--muted);
+}
+.loading-rows div {
+  height: 140px;
+  margin: 20px 0;
+  background: #e4e9ed;
+  border-radius: var(--radius);
+}
+.overdue {
+  color: var(--danger);
+  font-weight: 600;
+}
+.receipt-form,
+.receipt-history,
+.save-feedback {
+  grid-column: 1 / -1;
+}
+.receipt-form {
+  max-width: 680px;
+}
+.receipt-form h4 {
+  font-size: 1rem;
+  font-weight: 650;
+}
+.receipt-context {
+  margin-top: 4px;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+.remaining-preview {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9375rem;
+}
+.note-button {
+  justify-self: start;
+  margin-left: -8px;
+}
+.save-feedback {
+  color: var(--teal);
+  font-size: 0.875rem;
+}
+.receipt-history {
+  max-width: 680px;
+  font-size: 0.875rem;
+}
+.receipt-history ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.receipt-history li {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 12px 0;
+  border-top: 1px solid var(--rule);
+}
+.receipt-history li p {
+  margin-top: 4px;
+  color: var(--muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.receipt-history li strong {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 900px) {
+  .apartment {
+    grid-template-columns: minmax(200px, 1fr) minmax(370px, 1.5fr);
+    align-items: start;
+    column-gap: 40px;
+  }
+  .row-actions {
+    grid-column: 2;
+  }
+  .amounts {
+    gap: 24px;
+  }
+  .amounts dd {
+    font-size: 1.125rem;
+  }
+}
+@media (max-width: 420px) {
+  .app-shell {
+    padding-inline: 20px;
+  }
+  .app-header {
+    align-items: start;
+  }
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  h2 {
+    font-size: 1.5rem;
+  }
+  .entry-form {
+    padding: 20px 16px;
+  }
+  .amounts {
+    gap: 8px;
+  }
+}
+@media (max-width: 359px) {
+  .month-controls { display: grid; grid-template-columns: 44px 1fr 44px; }
+  .month-controls h2 { grid-column: 1 / -1; grid-row: 1; text-align: center; }
+  .month-controls > .icon-button { grid-row: 2; }
+  .month-controls > .icon-button:last-child { grid-column: 3; }
+  .amounts {
+    grid-template-columns: 1fr;
+  }
+  .amounts > div {
+    display: block;
+  }
+  .form-columns {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 899px) {
+  .amounts-wide {
+    grid-template-columns: 1fr;
+  }
 }

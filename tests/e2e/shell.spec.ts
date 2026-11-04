@@ -15,8 +15,8 @@ test("switches all shell text and remembers the language across reloads and visi
   const originalUrl = page.url();
   await page.getByRole("button", { name: "English", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Rental Manager", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Start with something simple." })).toBeVisible();
-  await expect(page.getByText("A space to keep track of your rentals. For now, choose the language that suits you.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in", exact: true })).toBeVisible();
+  await expect(page.getByText("Sign in to open your rental records.")).toBeVisible();
   await expect(page.getByRole("form", { name: "Interface language" })).toBeVisible();
   await expect(page.getByRole("button", { name: "English", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
@@ -32,8 +32,8 @@ test("switches all shell text and remembers the language across reloads and visi
   await expect(returnVisit.getByRole("heading", { name: "Rental Manager", exact: true })).toBeVisible();
   await returnVisit.getByRole("button", { name: "Русский", exact: true }).click();
   await expect(returnVisit.getByRole("heading", { name: "Управление арендой" })).toBeVisible();
-  await expect(returnVisit.getByRole("heading", { name: "Всё начинается с простого." })).toBeVisible();
-  await expect(returnVisit.getByText("Здесь будет удобно вести учёт аренды. Пока можно выбрать язык интерфейса.")).toBeVisible();
+  await expect(returnVisit.getByRole("heading", { name: "Войти", exact: true })).toBeVisible();
+  await expect(returnVisit.getByText("Войдите, чтобы открыть свои записи об аренде.")).toBeVisible();
   await expect(returnVisit.getByRole("form", { name: "Язык интерфейса" })).toBeVisible();
   await expect(returnVisit.locator("html")).toHaveAttribute("lang", "ru");
   await expect(returnVisit).toHaveTitle("Управление арендой");

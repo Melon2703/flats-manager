@@ -1,37 +1,85 @@
 import { dictionaries } from "@/i18n/dictionaries";
 import { getLocale } from "@/i18n/locale";
 import { setLocale } from "@/i18n/actions";
+import { createClient } from "@/lib/supabase/server";
+import { SignIn } from "@/components/sign-in";
+import { MonthlyLedger } from "@/components/monthly-ledger";
+import { monthSchema, receiptsSchema } from "@/lib/rent";
+import { CurrentMonth } from "@/components/current-month";
+import { SignOut } from "@/components/sign-out";
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
   const locale = await getLocale();
   const text = dictionaries[locale];
+  const today = new Date().toISOString().slice(0, 10);
+  const selected = monthSchema.safeParse((await searchParams).month);
+  const month = selected.success ? selected.data : today.slice(0, 7);
+  const client = await createClient();
+  const user = client ? (await client.auth.getUser()).data.user : null;
+  const result =
+    client && user && selected.success
+      ? await client.rpc("monthly_rent", { p_month: `${month}-01` })
+      : null;
+  const receipts =
+    client && user && selected.success && !result?.error
+      ? await client.rpc("monthly_receipts", { p_month: `${month}-01` })
+      : null;
+  const entries = receiptsSchema.safeParse(receipts?.data ?? []);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col gap-12 px-5 py-8 sm:px-10 sm:py-12">
-      <header className="flex flex-col gap-6 border-b border-slate-200 pb-8">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{text.appName}</h1>
-        <form action={setLocale} aria-label={text.languageLabel} className="flex flex-wrap items-center gap-2">
-          <span className="mr-2 text-sm text-slate-600">{text.languageLabel}</span>
-          {(["ru", "en"] as const).map((language) => (
-            <button
-              key={language}
-              type="submit"
-              name="locale"
-              value={language}
-              lang={language}
-              aria-pressed={locale === language}
-              className="min-h-11 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-700 aria-pressed:border-teal-800 aria-pressed:bg-teal-800 aria-pressed:text-white"
-            >
-              {text.languages[language]}
-            </button>
-          ))}
-        </form>
+    <main className="app-shell">
+      <header className="app-header">
+        <h1>{text.appName}</h1>
+        <div className="header-actions">
+          <form
+            action={setLocale}
+            aria-label={text.languageLabel}
+            className="language-switch"
+          >
+            {(["ru", "en"] as const).map((language) => (
+              <button
+                key={language}
+                type="submit"
+                name="locale"
+                value={language}
+                lang={language}
+                aria-pressed={locale === language}
+              >
+                {text.languages[language]}
+              </button>
+            ))}
+          </form>
+          {user && <SignOut label={text.signOut} />}
+        </div>
       </header>
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-10">
-        <div aria-hidden="true" className="mb-6 h-2 w-10 rounded-full bg-teal-700" />
-        <h2 className="text-2xl font-semibold leading-tight tracking-tight">{text.welcome}</h2>
-        <p className="mt-4 max-w-prose leading-relaxed text-slate-600">{text.introduction}</p>
-      </section>
+      {!client ? (
+        <section className="access-panel">
+          <h2>{text.setupTitle}</h2>
+          <p className="muted">{text.setupHelp}</p>
+        </section>
+      ) : !user ? (
+        <SignIn text={text} />
+      ) : !selected.success ? (
+        <CurrentMonth loading={text.loading} />
+      ) : result?.error || receipts?.error || !entries.success ? (
+        <p role="alert" className="error">
+          {text.loadError}
+        </p>
+      ) : (
+        <MonthlyLedger
+          key={month}
+          month={month}
+          rows={result?.data ?? []}
+          receipts={entries.data}
+          text={text}
+          locale={locale}
+          initialToday={today}
+        />
+      )}
     </main>
   );
 }
