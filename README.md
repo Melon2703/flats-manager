@@ -4,26 +4,26 @@ A mobile-first monthly rent ledger with Russian and English interfaces, built on
 
 ## Local setup
 
-Use Node.js **24.x** (`.nvmrc`), npm **11.x**, and Docker Desktop for local Supabase. Run commands from this repository root, leaving the separate nested `flats-manager/` Git repository untouched.
+Use Node.js **24.x** (`.nvmrc`) and npm **11.x**. Run commands from this repository root, leaving the separate nested `flats-manager/` Git repository untouched.
 
 ```sh
 nvm install
 nvm use
 npm ci
-npm run db:start
-npm run db:migrate
-npm run test:configure
+npm run dev
 ```
 
-`test:configure` writes the running local stack's URL and **public publishable key only** to ignored `.env.test.local`. It never saves privileged keys and refuses a non-local endpoint. For development, copy those two local values into ignored `.env.local`, then run `npm run dev` and open <http://localhost:3000>.
+Open <http://localhost:3000>. Local development opens a clearly labeled demo ledger with ten fictional apartments. No Docker, Supabase project, credentials, or login is needed. This is the temporary development workflow until hosting; [the local prototype policy](docs/agents/local-prototype.md) applies to every agent iteration.
 
-The app does not create sample apartments or silently fall back to browser storage. Without configuration it displays a connection-setup message. With configuration it requires sign-in. For a local manual trial, create a synthetic email/password user using the local Supabase Auth API or dashboard; there is no public signup screen. The browser tests create isolated synthetic users automatically.
+Demo edits persist across reloads in ignored `.local-demo/data/` files, isolated by an HTTP-only browser cookie. The reset control restores that browser's sample data. Clearing cookies starts a new dataset. These files are disposable synthetic data and never become hosted records. For a local production-build preview, use `npm run build` followed by `npm run start:demo`.
+
+To deliberately exercise Supabase, set `RENTAL_MANAGER_DATA_MODE=supabase` and configure its URL/public key. Normal production execution uses Supabase; demo mode is blocked on Vercel and non-loopback hosts. A failed Supabase connection never switches to dummy data.
 
 `next.config.ts` preserves the existing `AGENTS.md`. Generated Next.js declarations remain ignored and are recreated by development, type checking, and builds.
 
 ## Checks and browser tests
 
-With the local Supabase stack running and `.env.test.local` configured:
+The default checks require no database service:
 
 ```sh
 npm run lint
@@ -33,11 +33,23 @@ npx playwright install chromium
 npm test
 ```
 
-On Linux, use `npx playwright install --with-deps chromium`. Tests run the production application on port **3100** in mobile Pixel 7 and desktop Chromium viewports. Build before testing and keep that port free. `npm run test:e2e` is an alias. A focused run is `npm test -- tests/e2e/monthly-workflow.spec.ts --project=mobile-chromium`.
+On Linux, use `npx playwright install --with-deps chromium`. Tests run the production application on port **3100** in mobile Pixel 7 and desktop Chromium viewports. Build before testing and keep that port free. `npm run test:e2e` is an alias. A focused demo run is `npm test -- tests/e2e/demo-workflow.spec.ts --project=mobile-chromium`.
 
-Acceptance tests exercise the real local Auth/Postgres path through the browser. They cover setup, full/partial receipts, dated history, reload persistence, month separation, due status, bilingual drafts, and retry after a committed save's response is deliberately lost. Assertions observe the interface; Auth API calls only prepare synthetic accounts. Workflow tests refuse remote Supabase endpoints. Traces for failures are in `test-results/`; visual-review captures are written to the OS temporary directory under `flats-review/`.
+Default acceptance tests use the local demo adapter through the same browser UI, with isolated synthetic datasets under `.local-demo/playwright/`. They cover seeded records, receipts, reload persistence, setup/reset, language switching, and mode isolation. Demo checks do not verify Supabase RLS, authentication, or SQL functions.
 
-Migrations can be tested from scratch with `npx supabase db reset --local` **only against disposable local data**. This deletes local records and Auth accounts. Never use a linked/hosted database for the test reset. No reset is part of normal application startup or test execution.
+Optional real Supabase integration checks retain the earlier owner-account, financial, retry, and browser-history scenarios. With Docker Desktop running:
+
+```sh
+npm run db:start
+npm run db:migrate
+npm run test:configure
+npm run build
+npm run test:supabase
+```
+
+`test:configure` writes only the running local stack's URL and public publishable key to ignored `.env.test.local`. Only the Supabase test mode loads this file. Integration setup refuses remote endpoints. Neither normal app startup nor default tests reset a database. A disposable local database can be rebuilt with `npx supabase db reset --local`; that command deletes its local records and Auth accounts.
+
+Traces for failed tests are in `test-results/`; temporary visual captures are under the OS temporary directory. The local file adapter serializes writes within one server process and is not a substitute for database concurrency or hosted security tests.
 
 `typecheck` generates route types before strict TypeScript checking. Lint and type checking remain separate from production builds. ESLint 9 is retained for compatibility with Next.js's bundled lint plugins. Existing vendored Impeccable scripts can emit lint warnings; application lint must have no errors. `npm audit --omit=dev` checks runtime dependencies separately from the development-tool advisories.
 
@@ -49,7 +61,7 @@ Apartments start in the month selected during setup. Earlier months do not acqui
 
 Expected rent, actual receipts, and outstanding tenant rent are distinct. Each receipt retains its actual date separately from its assigned rental month. Partial receipts stay separate. The inline receipt form suggests the remaining amount and today's local date, requires confirmation, and does not focus the amount field automatically. Family allocation, expenses, advances, rent exceptions, corrections, and payout tracking are outside Issue #2.
 
-This form supports settlement up to the remaining rent. It rejects excess amounts explicitly; it does not invent overpayment or cross-month allocation rules. A locked monthly obligation serializes concurrent saves. Client-generated submission IDs and payload matching make exact retries idempotent, including when the first response is lost. An uncertain receipt submission retains its original payload, locks editing, and offers a safe retry. Records are never treated as verified bank balances.
+This form supports settlement up to the remaining rent. It rejects excess amounts explicitly; it does not invent overpayment or cross-month allocation rules. Supabase serializes concurrent saves by locking the monthly obligation; the local adapter serializes writes within its single server process. Client-generated submission IDs and payload matching make exact retries idempotent, including when the first response is lost. An uncertain receipt submission retains its original payload, locks editing, and offers a safe retry. Records are never treated as verified bank balances.
 
 ## Interface language and accessibility
 
@@ -65,7 +77,7 @@ Copy `.env.example` to `.env.local` (or configure equivalent Vercel environment 
 
 Apply both SQL migrations under `supabase/migrations/` to the intended project before using the app. Provision the owner's email/password account through Supabase Auth, verify access, and disable public signups for this single-owner deployment. The local development configuration allows test account creation; it is not a production Auth policy. Do not copy local test credentials into a hosted deployment.
 
-The server validates authentication on reads and mutations. Row-level security scopes reads to `auth.uid()`; authenticated clients cannot write tables directly. Narrow database functions enforce ownership, amount constraints, obligation locking, and retry identity. Session refresh uses the standard Next.js proxy and Supabase SSR cookie flow. No service-role or privileged key is used by the application.
+In Supabase mode, the server validates authentication on reads and mutations. Row-level security scopes reads to `auth.uid()`; authenticated clients cannot write tables directly. Narrow database functions enforce ownership, amount constraints, obligation locking, and retry identity. Session refresh uses the standard Next.js proxy and Supabase SSR cookie flow. No service-role or privileged key is used by the application.
 
 Database types are generated from the SQL schema in `src/lib/supabase/database.types.ts`. After schema changes, regenerate with `npx supabase gen types typescript --local > src/lib/supabase/database.types.ts`. Zod validates server inputs and receipt responses. Browser tests cover the approved acceptance seam; no unused calculation-test framework is installed.
 

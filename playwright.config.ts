@@ -1,10 +1,21 @@
 import { defineConfig, devices } from "@playwright/test";
 import { existsSync } from "node:fs";
 
-if (existsSync(".env.test.local")) process.loadEnvFile(".env.test.local");
+const supabase = process.env.RENTAL_MANAGER_DATA_MODE === "supabase";
+if (supabase && existsSync(".env.test.local"))
+  process.loadEnvFile(".env.test.local");
+process.env.RENTAL_MANAGER_DATA_MODE = supabase ? "supabase" : "demo";
+if (!supabase) {
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "";
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "";
+  process.env.RENTAL_MANAGER_DEMO_DIR = ".local-demo/playwright";
+}
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  testIgnore: supabase
+    ? "**/demo-workflow.spec.ts"
+    : "**/monthly-workflow.spec.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

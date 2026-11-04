@@ -24,6 +24,8 @@ A small, personal rental-finance tool shaped around this owner's monthly records
 
 ## Operating Context
 
+The current development phase uses temporary local dummy data until hosting. [Local prototype policy](docs/agents/local-prototype.md) governs each implementation/test iteration and the later Supabase cutover; synthetic demonstrations do not establish real owner validation.
+
 - Mobile-first use in a browser. Russian is the initial default; Russian and English must both be supported throughout the interface, including validation and accessible labels. A visible, accessible language switch remembers the same browser's preference.
 - The primary workflow is one selected-month overview of all apartments. Expected rent, received rent, expenses, outstanding rent, and due dates are visible without opening every apartment. Unpaid rent past its due date is distinguishable from rent not yet due.
 - Entry begins from an apartment's monthly row, inheriting the apartment and rental month. A compact form handles receipts and expenses. Monthly details or an expansion show individual entries and family shares; allocation review is not a required receipt-entry step.

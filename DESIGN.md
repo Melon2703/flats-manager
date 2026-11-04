@@ -150,6 +150,8 @@ White fields have a (1px) field-border stroke, minimum height (48px), and visibl
 
 ### Navigation
 
+During the local prototype phase, a thin notice below the app header labels demo data and offers a quiet text action to reset samples. It uses the existing teal, rule, and label treatments, wraps on phones, and is absent from the Supabase interface.
+
 The selected month is the largest heading and a button opening the native month input. Keep previous/next chevrons labeled for assistive technology. The visible Russian/English switch wraps; the selected language has a teal wash and weight (650). Narrow-screen month rearrangement follows Layout.
 
 ### Cards / Containers

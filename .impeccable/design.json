@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-04T05:46:40.908476+00:00",
+  "generatedAt": "2026-11-04T13:08:41.942Z",
   "title": "Design System: Rental Manager",
   "extensions": {
     "colorMeta": {
@@ -307,7 +307,7 @@
     "files": [
       {
         "path": "src/app/globals.css",
-        "sha256": "54d788570b7583e16969c8237429f38398ba31f8415772ea55e76926d962184f"
+        "sha256": "20910f951214e34edd96a41b23b67ac11f648025442e543531c501d110a843d3"
       },
       {
         "path": "src/components/monthly-ledger.tsx",
@@ -324,13 +324,17 @@
       {
         "path": "src/components/sign-out.tsx",
         "sha256": "ddb23af69d44aaf90581d923bbb37bef4a1cc2dfef45843fc494799c71d2e70a"
+      },
+      {
+        "path": "src/components/demo-notice.tsx",
+        "sha256": "a51c18b4b8cf5d348113913c59ee3720e2edadb6618179a00a66425a42094218"
       }
     ],
     "designDocument": {
       "path": "DESIGN.md",
-      "sha256": "1e7d0633473439d144e8299364464e85fe464b8e6324e3adbd475e0c446c136f"
+      "sha256": "61e3d64fb90387e507c0bbcaa8d90490d07459854d3c7dfbce618883bb7aa21a"
     },
     "staleCheck": "Compare SHA-256 of each source file and DESIGN.md against these values. A missing file or different digest means this extraction needs review; regenerate both artifacts after accepted visual changes.",
-    "reviewScope": "Documentation follows SHIP disposition scoped to 18 inspected states; no owner trial or future feature coverage is claimed."
+    "reviewScope": "Base ledger system follows the original Issue #2 finish review; the temporary demo notice was additionally inspected in Russian and English on mobile/desktop. No hosted or owner-trial validation is claimed."
   }
 }

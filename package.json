@@ -9,10 +9,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "start:demo": "RENTAL_MANAGER_DATA_MODE=demo next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "playwright test",
     "test:e2e": "playwright test",
+    "test:supabase": "RENTAL_MANAGER_DATA_MODE=supabase playwright test",
     "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor",
     "db:migrate": "supabase migration up",
     "test:configure": "node scripts/local-test-env.mjs"

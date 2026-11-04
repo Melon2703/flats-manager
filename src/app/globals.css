@@ -111,6 +111,17 @@ h3 {
 dt {
   color: var(--muted);
 }
+.demo-notice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 8px 0;
+  color: var(--teal);
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--rule);
+}
 .error {
   color: var(--danger);
   font-size: 0.9375rem;
@@ -432,10 +443,21 @@ dt {
   }
 }
 @media (max-width: 359px) {
-  .month-controls { display: grid; grid-template-columns: 44px 1fr 44px; }
-  .month-controls h2 { grid-column: 1 / -1; grid-row: 1; text-align: center; }
-  .month-controls > .icon-button { grid-row: 2; }
-  .month-controls > .icon-button:last-child { grid-column: 3; }
+  .month-controls {
+    display: grid;
+    grid-template-columns: 44px 1fr 44px;
+  }
+  .month-controls h2 {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    text-align: center;
+  }
+  .month-controls > .icon-button {
+    grid-row: 2;
+  }
+  .month-controls > .icon-button:last-child {
+    grid-column: 3;
+  }
   .amounts {
     grid-template-columns: 1fr;
   }

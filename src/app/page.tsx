@@ -7,6 +7,10 @@ import { MonthlyLedger } from "@/components/monthly-ledger";
 import { monthSchema, receiptsSchema } from "@/lib/rent";
 import { CurrentMonth } from "@/components/current-month";
 import { SignOut } from "@/components/sign-out";
+import { headers } from "next/headers";
+import { isLocalDemo } from "@/lib/data-mode";
+import { readDemoMonth } from "@/lib/demo-store";
+import { DemoNotice } from "@/components/demo-notice";
 
 export default async function Home({
   searchParams,
@@ -18,7 +22,8 @@ export default async function Home({
   const today = new Date().toISOString().slice(0, 10);
   const selected = monthSchema.safeParse((await searchParams).month);
   const month = selected.success ? selected.data : today.slice(0, 7);
-  const client = await createClient();
+  const demo = isLocalDemo((await headers()).get("host"));
+  const client = demo ? null : await createClient();
   const user = client ? (await client.auth.getUser()).data.user : null;
   const result =
     client && user && selected.success
@@ -28,7 +33,13 @@ export default async function Home({
     client && user && selected.success && !result?.error
       ? await client.rpc("monthly_receipts", { p_month: `${month}-01` })
       : null;
-  const entries = receiptsSchema.safeParse(receipts?.data ?? []);
+  const demoData =
+    demo && selected.success
+      ? await readDemoMonth(month).catch(() => null)
+      : null;
+  const entries = receiptsSchema.safeParse(
+    demo ? (demoData?.receipts ?? []) : (receipts?.data ?? []),
+  );
 
   return (
     <main className="app-shell">
@@ -56,24 +67,28 @@ export default async function Home({
           {user && <SignOut label={text.signOut} />}
         </div>
       </header>
-      {!client ? (
+      {demo && selected.success && <DemoNotice month={month} text={text} />}
+      {!client && !demo ? (
         <section className="access-panel">
           <h2>{text.setupTitle}</h2>
           <p className="muted">{text.setupHelp}</p>
         </section>
-      ) : !user ? (
+      ) : !user && !demo ? (
         <SignIn text={text} />
       ) : !selected.success ? (
         <CurrentMonth loading={text.loading} />
-      ) : result?.error || receipts?.error || !entries.success ? (
+      ) : result?.error ||
+        receipts?.error ||
+        !entries.success ||
+        (demo && !demoData) ? (
         <p role="alert" className="error">
           {text.loadError}
         </p>
       ) : (
         <MonthlyLedger
-          key={month}
+          key={`${month}-${demoData?.generation ?? "supabase"}`}
           month={month}
-          rows={result?.data ?? []}
+          rows={demo ? (demoData?.rows ?? []) : (result?.data ?? [])}
           receipts={entries.data}
           text={text}
           locale={locale}

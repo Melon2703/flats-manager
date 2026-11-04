@@ -6,6 +6,8 @@ The founder selected Next.js and Vercel as the initial hosting platform. Priorit
 
 ## Implementation defaults
 
+During the temporary local prototype phase, ordinary development and browser checks use the isolated dummy-data adapter described in [local prototype policy](agents/local-prototype.md). Supabase remains the hosted database/authentication choice; this local convenience does not replace that decision.
+
 | Concern | Choice | Reason |
 | --- | --- | --- |
 | Application | Next.js App Router, React, TypeScript with strict checking | One application for UI and server operations, with typed inputs and standard framework conventions. |

@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { monthSchema, parseCents, type ActionResult } from "@/lib/rent";
 import { z } from "zod";
+import { headers } from "next/headers";
+import { isLocalDemo } from "@/lib/data-mode";
+import { addDemoApartment, recordDemoReceipt } from "@/lib/demo-store";
 
 export async function addApartment(form: FormData): Promise<ActionResult> {
   const input = z
@@ -18,6 +21,17 @@ export async function addApartment(form: FormData): Promise<ActionResult> {
   if (!input.success) return { error: "invalid" };
   const cents = parseCents(input.data.rent);
   if (cents === null) return { error: "invalid" };
+  if (isLocalDemo((await headers()).get("host"))) {
+    const result = await addDemoApartment({
+      id: input.data.id,
+      name: input.data.name,
+      rent: cents,
+      day: input.data.dueDay,
+      month: input.data.month,
+    });
+    revalidatePath("/");
+    return result;
+  }
   const client = await createClient();
   if (!client || !(await client.auth.getUser()).data.user)
     return { error: "save" };
@@ -50,6 +64,18 @@ export async function recordReceipt(form: FormData): Promise<ActionResult> {
   if (!input.success) return { error: "invalid" };
   const cents = parseCents(input.data.amount);
   if (cents === null) return { error: "invalid" };
+  if (isLocalDemo((await headers()).get("host"))) {
+    const result = await recordDemoReceipt({
+      id: input.data.id,
+      apartmentId: input.data.apartmentId,
+      month: input.data.month,
+      amount: cents,
+      date: input.data.date,
+      note: input.data.note,
+    });
+    revalidatePath("/");
+    return result;
+  }
   const client = await createClient();
   if (!client || !(await client.auth.getUser()).data.user)
     return { error: "save" };

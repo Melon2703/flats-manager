@@ -5,6 +5,10 @@ const ru = {
   introduction:
     "Здесь будет удобно вести учёт аренды. Пока можно выбрать язык интерфейса.",
   languageLabel: "Язык интерфейса",
+  demoNotice: "Тестовые данные · только локально",
+  demoReset: "Сбросить тестовые данные",
+  demoResetConfirm:
+    "Восстановить тестовые данные? Все ваши локальные изменения будут удалены.",
   languages: { ru: "Русский", en: "English" },
   signIn: "Войти",
   signInHelp: "Войдите, чтобы открыть свои записи об аренде.",
@@ -82,6 +86,10 @@ const en: Dictionary = {
   introduction:
     "A space to keep track of your rentals. For now, choose the language that suits you.",
   languageLabel: "Interface language",
+  demoNotice: "Demo data · local only",
+  demoReset: "Reset demo data",
+  demoResetConfirm:
+    "Restore the sample data? All your local demo changes will be removed.",
   languages: { ru: "Русский", en: "English" },
   signIn: "Sign in",
   signInHelp: "Sign in to open your rental records.",
